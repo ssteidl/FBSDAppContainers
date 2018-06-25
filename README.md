@@ -27,6 +27,16 @@ Application containers for FreeBSD.
 * **APPC_ARCHIVE_DIR**: Directory for archives to be saved (during creation or download).
 * **APPC_REGISTRY_URL**: URL to the appc registry
 
+## Example cli
+
+**NOTE:** These commands are the direction for implementation.  They are not yet necessarily implemented.
+
+* appc start --name=mycontainer --image=couchdb [--mount=<some nullfs directory>:<abolute path in container>] [-- command to run]
+    * Run a container with the given command.  Anything falling '--' is considered part of the command.  If -- is not given, then look
+      for an appc file.
+* appc save --name=mycontainer
+* appc publish --image=couchdb
+
 ## Features
 
 * **Image registry**: Pull multiple formats of images that can be used as filesystems for jails.  There could be multiple registry types:

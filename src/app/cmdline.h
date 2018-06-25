@@ -11,13 +11,18 @@ namespace appc
 struct commandline
 {
 public:
+
     std::string image;
     std::string container;
     std::vector<char*> container_cmd_args;
-    std::string image_type;
-    int operation_count; /*Used for validation that only one
-                          * operation is given.*/
-    bool do_save;
+
+    std::string cmd; /**< Which command is being run*/
+
+private:
+
+    void parse_command_args(int argc, char** argv);
+
+public:
 
     static void usage();
 

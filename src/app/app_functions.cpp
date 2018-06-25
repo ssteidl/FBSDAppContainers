@@ -74,7 +74,7 @@ appc::funcs::mount_container_image(commandline &cmdline, environment& env)
 
 void appc::funcs::save_container_image(commandline& cmdline, environment& env)
 {
-    if(!cmdline.do_save)
+    if(cmdline.cmd != "save")
     {
         throw std::logic_error("do_save has not been requested");
     }

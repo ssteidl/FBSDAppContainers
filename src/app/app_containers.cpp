@@ -55,28 +55,7 @@ int run_main(int argc, char** argv)
         exit(1);
     }
 
-    /*APPC_REGISTRY is the url to the registry.  It could potentially
-     * support multiple different protocols
-     * TODO: enable when we support the registry
-     */
-
-    /*APPC_IMAGE_DIR is the directory where images are extracted to after
-     * being downloaded from a registry*/
-
-
-    /*APPC_CONTAINER_DIR is where container directories are created.  Inside
-     * container directories lives the mounted image(s).  The mount may be
-     * a null mount from the image contained in APPC_IMAGE_DIR or it could be
-     * vnode back mem disk, or zfs clone or any number of mount options.
-     */
     environment env;
-
-    /*Next steps:
-     * 1. bind the image to wherever it needs to go in the container
-     * directory.
-     * 2. Run tcl script to setup the jail (get script from command line.  can be empty)
-     * 3. Start the jail
-     */
 
     appc::funcs::auto_unmount_ptr mountpoint = appc::funcs::mount_container_image(*cmdline, env);
 

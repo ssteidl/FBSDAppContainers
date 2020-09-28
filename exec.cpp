@@ -360,10 +360,14 @@ namespace
         }
     };
 
+    /**
+     * @brief handle_kqueue_signal_event Responsible for handling the signal event from kqueue and creating
+     * the necessary tcl objects and tcl event so the tcl script signal callback will be invoked.
+     * @param event
+     */
     void handle_kqueue_signal_event(struct kevent& event)
     {
         assert(event.udata);
-        /*event.udata should be the monitored process group.*/
         appc_exec_interp_state* interp_state = reinterpret_cast<appc_exec_interp_state*>(event.udata);
         if(!interp_state->signal_callback)
         {
@@ -404,7 +408,8 @@ namespace
         }
 
         appc::tclobj_ptr eval_params = appc::create_tclobj_ptr(Tcl_NewListObj(callback_length, callback_elements));
-        error = Tcl_ListObjAppendElement(interp_state->interp, eval_params.get(), top_level_list.release());
+        error = Tcl_ListObjAppendElement(interp_state->interp, eval_params.get(), Tcl_NewStringObj(sys_signame[event.ident], -1));
+        error = error || Tcl_ListObjAppendElement(interp_state->interp, eval_params.get(), top_level_list.release());
         if(error)
         {
             Tcl_BackgroundError(interp_state->interp);
@@ -532,7 +537,6 @@ int Appc_Exec_SetSignalHandler(void *clientData, Tcl_Interp *interp,
     std::vector<int> sigs = {SIGINT, SIGTERM, SIGHUP};
     for(int sig : sigs)
     {
-        std::cerr << "Ignoring signal: " << sig << std::endl;
         signal(sig, SIG_IGN);
         EV_SET(&ev, sig, EVFILT_SIGNAL, EV_ADD, 0, 0, (void*)interp_state);
         int error = kevent(interp_state->state.kqueue_fd, &ev, 1, nullptr, 0, nullptr);

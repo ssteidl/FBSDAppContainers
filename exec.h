@@ -4,6 +4,9 @@
 
 int Appc_ExecInit(Tcl_Interp* interp);
 
+int Appc_Exec_SetSignalHandler(void *clientData, Tcl_Interp *interp,
+              int objc, struct Tcl_Obj *const *objv);
+
 int Appc_Exec(void *clientData, Tcl_Interp *interp,
               int objc, struct Tcl_Obj *const *objv);
 

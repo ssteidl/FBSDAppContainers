@@ -14,6 +14,8 @@ package require appc::zfs
 package require debug
 package require defer
 
+package require fileutil
+
 debug define appc
 debug on appc 1 stderr
 
@@ -35,6 +37,18 @@ if {![appc::zfs::is_mounted $pool]} {
 }
 
 set run_done_flag [expr false]
+
+proc signal_handler {active_pid_groups} {
+    
+    foreach pid_group $active_pid_groups {
+        foreach p $pid_group {
+            set data [fileutil::cat "/proc/${p}/status"]
+            puts stderr "Status: $data"
+        }
+    }
+}
+
+appc::exec_set_signal_handler [list signal_handler]
 
 #TODO: This belongs in the 'appc init' command whenever
 # we decide to implement that..
@@ -61,7 +75,7 @@ proc run_container_coro {options} {
         set chan_dict [dict create stdin stdin stdout stdout stderr stderr]
     } else {
         set devnull [open /dev/null w]
-        set chan_dict [dict create stdin $devnull stdout $devnull stderr $devnull]
+        set chan_dict [dict create stdin $devnull stdout stdout stderr stderr]
         defer::with [list devnull] {
             close $devnull
         }

@@ -3,6 +3,7 @@
 #include "exec.h"
 #include <fcntl.h>
 #include <iostream>
+#include <list>
 #include <set>
 #include <sstream>
 #include <string>
@@ -18,9 +19,15 @@
 /*TODO: Consistent naming conventions*/
 /*TODO: Better logging support.  There is too much logging to cerr for an extension*/
 /*TODO: There are actually 3 potentially separate modules in this file.  kqueue, process monitoring
- * and exec*/
+ * and exec
+ * NOTE: Now that we have added the signal handling and jail lookup, this isn't really a generic exec
+ * module anymore.  It's now pretty specialized for the running a jail use case.*/
 namespace
 {
+    /**
+     * @brief The kqueue_state struct simply manages if there is an event ready to be
+     * processed in the kqueue.
+     */
     struct kqueue_state
     {
         int kqueue_fd;
@@ -41,7 +48,8 @@ namespace
     };
 
     /**
-     * Class for monitoring a heirarchy of processes.
+     * Class for monitoring a heirarchy of processes.  This class provides the interface
+     * that is called based on EVFILT_PROC events.
      */
     class monitored_process_group
     {
@@ -96,19 +104,92 @@ namespace
 
             return (m_child_exited && m_descendants.empty());
         }
+
+        std::set<pid_t> active_pids()
+        {
+            std::set<pid_t> pids;
+            if(!m_child_exited)
+            {
+                pids.insert(m_child);
+            }
+
+            pids.insert(std::begin(m_descendants), std::end(m_descendants));
+            return pids;
+        }
     };
 
+    using monitored_process_group_list = std::list<std::shared_ptr<monitored_process_group>>;
+    void KqueueEventCheckProc(void *clientData, int flags);
+    void KqueueEventSetupProc(void *clientData, int flags);
+
+    /**
+     * @brief The appc_exec_interp_state struct Contains the necessary per-interpreter state.  Basically
+     * all of the data that is needed at the global level but hang it off of an interp for good practice.
+     */
+    struct appc_exec_interp_state
+    {
+        kqueue_state state;
+        Tcl_Interp* interp;
+        monitored_process_group_list mpgs;
+        appc::tclobj_ptr signal_callback;
+
+    private:
+        appc_exec_interp_state(Tcl_Interp* interp)
+            : state(kqueue()),
+              interp(interp),
+              mpgs(),
+              signal_callback(nullptr, appc::unref_tclobj)
+        {
+            if(state.kqueue_fd != -1)
+            {
+                Tcl_CreateEventSource(KqueueEventSetupProc, KqueueEventCheckProc, this);
+            }
+        }
+    public:
+        ~appc_exec_interp_state()
+        {
+            /*Tcl ignores the case when the event source doesn't exist.*/
+            Tcl_DeleteEventSource(KqueueEventSetupProc, KqueueEventCheckProc, this);
+        }
+
+        static int create(Tcl_Interp* interp,
+                          std::unique_ptr<appc_exec_interp_state>& interp_state)
+        {
+            /*NOTE: Can't use make_unique with private constructor.*/
+            std::unique_ptr<appc_exec_interp_state> tmp_ptr(new appc_exec_interp_state(interp));
+            if(tmp_ptr->state.kqueue_fd == -1)
+            {
+                return appc::syserror_result(interp, "APPC EXEC KQUEUE");
+            }
+            interp_state = std::move(tmp_ptr);
+            return TCL_OK;
+        }
+
+        void set_signal_callback(Tcl_Obj* callback)
+        {
+            Tcl_IncrRefCount(callback);
+            signal_callback = appc::create_tclobj_ptr(callback);
+        }
+    };
+
+    /**
+     * @brief The process_group_tcl_event struct is the structure that is used as
+     * a tcl event when the monitored process group has exited.  It is responsible
+     * for calling the provided callback script when all processes have exited.
+     */
     struct process_group_tcl_event : public Tcl_Event
     {
         Tcl_Interp* interp;
         Tcl_Obj* callback_script;
-        std::unique_ptr<monitored_process_group> mpg;
+        std::shared_ptr<monitored_process_group> mpg;
 
         static int event_proc(Tcl_Event *ev, int flags)
         {
             (void)flags;
             process_group_tcl_event* _this = reinterpret_cast<process_group_tcl_event*>(ev);
 
+            /*TODO: Add a "reason" parameter to the callback script.  In this case the reason would be
+             * 'exit' but in other cases it might be 'signal' and have a jail id.*/
             int ret = Tcl_EvalObjEx(_this->interp, _this->callback_script, TCL_EVAL_GLOBAL);
 
             if(ret != TCL_OK)
@@ -116,17 +197,18 @@ namespace
                 Tcl_BackgroundError(_this->interp);
             }
 
-            /*Explicitly call the destructor because TCL event loop owns the memory*/
+            /*Explicitly call the destructor because TCL event loop owns the memory.  My understanding is
+             * that this will explicitly call the destructors for member objects.*/
             _this->~process_group_tcl_event();
 
             return 1; /*Event has been processed*/
         }
 
         process_group_tcl_event(Tcl_Interp* interp, Tcl_Obj* callback_script,
-                                pid_t child_pid)
+                                std::shared_ptr<monitored_process_group>& mpg)
             : interp(interp),
               callback_script(callback_script),
-              mpg(std::make_unique<monitored_process_group>(child_pid))
+              mpg(mpg)
         {
             this->proc = event_proc;
             this->nextPtr = nullptr;
@@ -140,9 +222,16 @@ namespace
         }
     };
 
+    /**
+     * @brief dup_fd Duplicates an fd into another specific fd and handles errors as needed.
+     * @param old_fd
+     * @param new_fd
+     * @param fd_name
+     * @param error_fd
+     * @return
+     */
     int dup_fd(int old_fd, int new_fd, const std::string& fd_name, int error_fd = 2)
     {
-        std::cerr << getpid() << ": " << old_fd << "->" << new_fd << std::endl;
         new_fd = dup2(old_fd, new_fd);
         if(new_fd == -1)
         {
@@ -156,14 +245,22 @@ namespace
         return 0;
     }
 
-    /*Kqueue fd is active*/
+    /**
+     * @brief KqueueEventReady The callback for the tcl file handler (fd notifier).
+     * @param clientData
+     * @param flags
+     */
     void KqueueEventReady(void *clientData, int flags)
     {
         kqueue_state* state = reinterpret_cast<kqueue_state*>(clientData);
         state->ready = true;
     }
 
-    /*Setup the kqueue event handler in the tcl event loop*/
+    /**
+     * @brief KqueueEventSetupProc The setup proc for the tcl event loop integration.
+     * @param clientData
+     * @param flags
+     */
     void KqueueEventSetupProc(void *clientData, int flags)
     {
         (void)flags;
@@ -177,6 +274,11 @@ namespace
         Tcl_CreateFileHandler(state->kqueue_fd, TCL_READABLE, KqueueEventReady, state);
     }
 
+    /**
+     * @brief handle_kqueue_proc_event Handles a kqueue EVFILT_PROC event.  It is responsible
+     * for queuing the tcl event when the monitored process group has allof the processes exited.
+     * @param event
+     */
     void handle_kqueue_proc_event(struct kevent& event)
     {
         assert(event.udata);
@@ -192,20 +294,133 @@ namespace
 
         if(event.fflags & NOTE_CHILD)
         {
-//            std::cerr << "NOTE_CHILD: " << event.ident << std::endl;
             pge->mpg->add_descendant((pid_t)event.ident);
         }
         else if(event.fflags & NOTE_EXIT)
         {
-//            std::cerr << "NOTE_EXIT: " << event.ident << std::endl;
             bool is_process_group_empty = pge->mpg->exited(event.ident, event.data);
             if(is_process_group_empty)
             {
+                /*Queues the process done callback.*/
                 Tcl_QueueEvent(pge, TCL_QUEUE_TAIL);
             }
         }
     }
 
+    /**
+     * @brief The AppcExecSignalEvent class Encapsulates the event handling of signal events.
+     */
+    class appc_exec_signal_event : public Tcl_Event
+    {
+        Tcl_Obj* m_eval_params;
+        Tcl_Interp* m_interp;
+
+        static int event_proc(Tcl_Event *evPtr, int flags)
+        {
+            appc_exec_signal_event* _this = reinterpret_cast<appc_exec_signal_event*>(evPtr);
+
+            int error = Tcl_EvalObjEx(_this->m_interp, _this->m_eval_params, TCL_EVAL_GLOBAL);
+
+            /*Memory will be deleted by the tcl event loop.*/
+            _this->~appc_exec_signal_event();
+
+            if(error)
+            {
+                Tcl_BackgroundError(_this->m_interp);
+            }
+
+            return 1; /*Handled event.  */
+        }
+
+        appc_exec_signal_event(Tcl_Obj* eval_params, Tcl_Interp* interp)
+            : Tcl_Event(),
+              m_eval_params(eval_params),
+              m_interp(interp)
+        {
+
+            this->proc = event_proc;
+            this->nextPtr = nullptr;
+            Tcl_IncrRefCount(eval_params);
+        }
+
+        ~appc_exec_signal_event()
+        {
+            Tcl_DecrRefCount(m_eval_params);
+        }
+    public:
+
+        static void enqueue_signal_event(Tcl_Interp* interp, Tcl_Obj* callback_eval_params)
+        {
+            /*New placement because tcl event queue frees the memory*/
+            appc_exec_signal_event* event_buffer = reinterpret_cast<appc_exec_signal_event*>(Tcl_Alloc(sizeof(appc_exec_signal_event)));
+            assert(event_buffer);
+            new(event_buffer) appc_exec_signal_event(callback_eval_params, interp);
+
+            Tcl_QueueEvent(event_buffer, TCL_QUEUE_TAIL);
+        }
+    };
+
+    void handle_kqueue_signal_event(struct kevent& event)
+    {
+        assert(event.udata);
+        /*event.udata should be the monitored process group.*/
+        appc_exec_interp_state* interp_state = reinterpret_cast<appc_exec_interp_state*>(event.udata);
+        if(!interp_state->signal_callback)
+        {
+            return;
+        }
+
+        appc::tclobj_ptr top_level_list = appc::create_tclobj_ptr(Tcl_NewListObj(0, nullptr));
+        for(auto mpg : interp_state->mpgs)
+        {
+            Tcl_Obj* mpg_list = Tcl_NewListObj(0, nullptr);
+            int error = Tcl_ListObjAppendElement(interp_state->interp, top_level_list.get(), mpg_list);
+            if(error)
+            {
+                Tcl_BackgroundError(interp_state->interp);
+                return;
+            }
+
+            /*The signal handler should take a list of lists each of which contain all active pids
+             * for a process group.  The tcl code can search for jails and shut them down as necessary*/
+            for(pid_t pid : mpg->active_pids())
+            {
+                error = Tcl_ListObjAppendElement(interp_state->interp, mpg_list, Tcl_NewWideIntObj(pid));
+                if(error)
+                {
+                    Tcl_BackgroundError(interp_state->interp);
+                    return;
+                }
+            }
+        }
+
+        int callback_length = 0;
+        Tcl_Obj **callback_elements = nullptr;
+        int error = Tcl_ListObjGetElements(interp_state->interp, interp_state->signal_callback.get(), &callback_length, &callback_elements);
+        if(error)
+        {
+            Tcl_BackgroundError(interp_state->interp);
+            return;
+        }
+
+        appc::tclobj_ptr eval_params = appc::create_tclobj_ptr(Tcl_NewListObj(callback_length, callback_elements));
+        error = Tcl_ListObjAppendElement(interp_state->interp, eval_params.get(), top_level_list.release());
+        if(error)
+        {
+            Tcl_BackgroundError(interp_state->interp);
+            return;
+        }
+
+        appc_exec_signal_event::enqueue_signal_event(interp_state->interp, eval_params.release());
+    }
+
+    /**
+     * @brief KqueueEventCheckProc Handles available kqueue events.  We know if
+     * an event is ready based on the kqueue_state which is set by the file event
+     * handler.
+     * @param clientData
+     * @param flags
+     */
     void KqueueEventCheckProc(void *clientData, int flags)
     {
         (void)flags;
@@ -246,6 +461,9 @@ namespace
             case EVFILT_PROC:
                 handle_kqueue_proc_event(events[i]);
                 break;
+            case EVFILT_SIGNAL:
+                handle_kqueue_signal_event(events[i]);
+                break;
             default:
                 throw std::runtime_error("Unexexpected filter type: " + std::to_string(events[i].filter));
                 break;
@@ -265,42 +483,6 @@ namespace
             close(kqueue_fd);
         }
     }
-
-    struct appc_exec_tcl_raii
-    {
-        kqueue_state state;
-        Tcl_Interp* interp;
-
-    private:
-        appc_exec_tcl_raii(Tcl_Interp* interp)
-            : state(kqueue()),
-              interp(interp)
-        {
-            if(state.kqueue_fd != -1)
-            {
-                Tcl_CreateEventSource(KqueueEventSetupProc, KqueueEventCheckProc, this);
-            }
-        }
-    public:
-        ~appc_exec_tcl_raii()
-        {
-            /*Tcl ignores the case when the event source doesn't exist.*/
-            Tcl_DeleteEventSource(KqueueEventSetupProc, KqueueEventCheckProc, this);
-        }
-
-        static int create(Tcl_Interp* interp,
-                          std::unique_ptr<appc_exec_tcl_raii>& raii_ptr)
-        {
-            /*NOTE: Can't use make_unique with private constructor.*/
-            std::unique_ptr<appc_exec_tcl_raii> tmp_ptr(new appc_exec_tcl_raii(interp));
-            if(tmp_ptr->state.kqueue_fd == -1)
-            {
-                return appc::syserror_result(interp, "APPC EXEC KQUEUE");
-            }
-            raii_ptr = std::move(tmp_ptr);
-            return TCL_OK;
-        }
-    };
 }
 
 int Appc_ExecInit(Tcl_Interp* interp)
@@ -308,30 +490,76 @@ int Appc_ExecInit(Tcl_Interp* interp)
     /*TODO: We should probably make our own kqueue module
      * for appc::native extension
      */
-    std::unique_ptr<appc_exec_tcl_raii> raii_ptr;
-    int tcl_error = appc_exec_tcl_raii::create(interp, raii_ptr);
+    std::unique_ptr<appc_exec_interp_state> interp_state;
+    int tcl_error = appc_exec_interp_state::create(interp, interp_state);
     if(tcl_error) return tcl_error;
 
-    (void)Tcl_CreateObjCommand(interp, "appc::exec", Appc_Exec, raii_ptr.release(),
-                               appc::cpp_delete<appc_exec_tcl_raii>);
+    Tcl_SetAssocData(interp, "AppcExec", appc::cpp_delete_with_interp<appc_exec_interp_state>, interp_state.release());
+
+    (void)Tcl_CreateObjCommand(interp, "appc::exec_set_signal_handler", Appc_Exec_SetSignalHandler, nullptr, nullptr);
+    (void)Tcl_CreateObjCommand(interp, "appc::exec", Appc_Exec, nullptr, nullptr);
+
+    return TCL_OK;
+}
+
+/**
+ * @brief Appc_Exec_SetSignalHandler Setup kqueue to notify us of interesting signals.  Set the signal
+ * handler that will be called when an interesting signal is given to us.
+ * @param clientData
+ * @param interp
+ * @param objc
+ * @param objv
+ * @return
+ */
+int Appc_Exec_SetSignalHandler(void *clientData, Tcl_Interp *interp,
+              int objc, struct Tcl_Obj *const *objv)
+{
+
+    /*NOTE: I wonder if I should be using a pty to pass along signals instead of doing this?
+     * I don't think so because that wouldn't help with jail processes that run in the background.  Perhaps
+     * that should be done in interactive mode.  See ticket #37*/
+    if(objc != 2)
+    {
+        Tcl_WrongNumArgs(interp, objc, objv, "<callback_prefix>");
+    }
+
+
+    appc_exec_interp_state* interp_state = reinterpret_cast<appc_exec_interp_state*>(Tcl_GetAssocData(interp, "AppcExec", nullptr));
+
+    signal(SIGHUP, SIG_IGN);
+
+    struct kevent ev;
+    std::vector<int> sigs = {SIGINT, SIGTERM, SIGHUP};
+    for(int sig : sigs)
+    {
+        std::cerr << "Ignoring signal: " << sig << std::endl;
+        signal(sig, SIG_IGN);
+        EV_SET(&ev, sig, EVFILT_SIGNAL, EV_ADD, 0, 0, (void*)interp_state);
+        int error = kevent(interp_state->state.kqueue_fd, &ev, 1, nullptr, 0, nullptr);
+        if(error)
+        {
+            return appc::syserror_result(interp, "KQUEUE", "SIGNAL");
+        }
+    }
+
+    interp_state->set_signal_callback(objv[1]);
+
     return TCL_OK;
 }
 
 int Appc_Exec(void *clientData, Tcl_Interp *interp,
               int objc, struct Tcl_Obj *const *objv)
 {
-    kqueue_state* state = reinterpret_cast<kqueue_state*>(clientData);
+    (void)objv;
+    appc_exec_interp_state* appc_exec = reinterpret_cast<appc_exec_interp_state*>(Tcl_GetAssocData(interp, "AppcExec", nullptr));
+    assert(appc_exec);
+    kqueue_state* state = &appc_exec->state;
 
     if(objc < 4)
     {
         Tcl_WrongNumArgs(interp, objc, objv, "<fd_dict> <callback_prefix> cmd...");
         return TCL_ERROR;
     }
-
-    /*TODO: Accept a -daemon flag which will do a double fork so it is
-     * reparented by init.  daemon flag can just cause daemon() to be called.
-     * This flag will affect whether we need to reap the child or not.
-     */
 
     int stdin_fd = 0;
     int stderr_fd = 1;
@@ -448,8 +676,6 @@ int Appc_Exec(void *clientData, Tcl_Interp *interp,
             }
         }
 
-        signal(SIGHUP, SIG_DFL);
-
         /*dup2 handles the case where the fds are the same*/
         int error = dup_fd(stdin_fd, 0, "stdin");
         if(error) exit(1);
@@ -483,11 +709,13 @@ int Appc_Exec(void *clientData, Tcl_Interp *interp,
         /*Parent*/
         if(async)
         {
-            struct kevent event;
-            void* pge_buffer = Tcl_Alloc(sizeof(process_group_tcl_event));
+            std::shared_ptr<monitored_process_group> mpg = std::make_shared<monitored_process_group>(pid);
+            appc_exec->mpgs.push_back(mpg);
 
-            std::cerr << "Forked pid: " << pid << std::endl;
-            new(pge_buffer) process_group_tcl_event(interp, callback_prefix, pid);
+            void* pge_buffer = Tcl_Alloc(sizeof(process_group_tcl_event));
+            new(pge_buffer) process_group_tcl_event(interp, callback_prefix, mpg);
+
+            struct kevent event;
             EV_SET(&event, pid, EVFILT_PROC, EV_ADD, NOTE_EXIT|NOTE_TRACK, 0, pge_buffer);
 
             int error = kevent(state->kqueue_fd, &event, 1, nullptr, 0, nullptr);

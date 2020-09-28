@@ -33,5 +33,11 @@ void cpp_delete(void* client_data)
 {
     delete((T*)client_data);
 }
+
+template <typename T>
+void cpp_delete_with_interp(void* client_data, Tcl_Interp* interp)
+{
+    delete((T*)client_data);
+}
 }
 #endif // TCL_UTIL_H

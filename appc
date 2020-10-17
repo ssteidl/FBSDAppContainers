@@ -36,25 +36,114 @@ if {![appc::zfs::is_mounted $pool]} {
     appc::zfs::mount $pool
 }
 
+#TODO: Check if proc filesystem is mounted.  If not, mount it
+
 set run_done_flag [expr false]
 
 proc signal_handler {signal active_pid_groups} {
+
+    #TODO: Move this shutdown code to the jail module.  The signal
+    # handler should stay here.
     
-    foreach pid_group $active_pid_groups {
-        foreach p $pid_group {
+    puts stderr "apgs: $active_pid_groups"
+
+    proc find_jail_from_pid {pids} {
+
+        set jail {}
+        foreach p $pids {
+            if {$p eq {}} {
+                continue
+            }
             set data [fileutil::cat "/proc/${p}/status"]
-            puts stderr "Status: $data"
-            #Propagate the signal as follows:
-            # 1. If it's sigint, go through the shutdown process.
-            #    The thought being that sigint comes from a keyboard and generally will mean, stop jail.
-            #
-            # 2. If it's an interactive shell, pass through the signal to the main process.  NOTE: Perhaps
-            #    we need a way to define the main process in the AppcFile (or signal handler processes).
-            #    Then we could search for it by name in the pid status files.
-            #    
-            # 3. SIGTERM should shutdown the jail (/etc/rc.shutdown, then kill -TERM -1).
+            puts stderr "status: $data"
+            set jail_status [lindex $data end]
+            puts stderr "jail_status: $jail_status"
+            if {$jail_status ne {-} && $jail_status ne {}} {
+                set jail $jail_status
+            }
+        }
+
+        return $jail
+    }
+
+    foreach pid_group $active_pid_groups {
+
+        set jail {}
+        set main_pid [dict get $pid_group "main_pid"]
+        dict for {key pid_list} $pid_group {
+
+            switch -exact $key {
+
+                "main_pid" {
+                    #main_pid isn't a list so we make it one
+                    set jail [find_jail_from_pid [list $pid_list]]
+                }
+
+                "active_pids" {
+                    set jail [find_jail_from_pid $pid_list]
+                }
+
+                default {
+                    puts stderr "Got to default"
+                }
+            }
+        }
+
+        if {$jail eq {}} {
+            return -code error "Could not find jail in signal handler"
+        }
+
+        
+        puts stderr "jail for signal: $jail"
 
             
+        #Propagate the signal as follows:
+        # 1. If it's sigint, go through the shutdown process.
+        #    The thought being that sigint comes from a keyboard and generally will mean, stop jail.
+        #
+        # 2. If it's an interactive shell, pass through the signal to the main process.  NOTE: Perhaps
+        #    we need a way to define the main process in the AppcFile (or signal handler processes).
+        #    Then we could search for it by name in the pid status files.
+        #    
+        # 3. SIGTERM should shutdown the jail (/etc/rc.shutdown, then kill -TERM -1)
+
+        
+        #If the main pid is still running, pass the signal to the main pid
+        if {$main_pid ne {}} {
+            puts stderr "Passing signal to main pid"
+            set err [catch {exec -ignorestderr jexec $jail kill "-${signal}" $main_pid}]
+            if {$err} {
+                puts stderr "Error killing main process in jail: $jail"
+            }
+
+            #If it's a sigint and main process is still running, remove the jail.
+            switch -exact $signal {
+                INT {
+                    #Give it 5 seconds to shutdown.
+                    #TODO: We could make this configurable via the commandline
+                    after 5000
+                    
+                    puts stderr "Removing jail $jail"
+                    exec -ignorestderr jail -r $jail >&@ stderr
+                }
+            }
+        } else {
+            #For background jails, sigint is immediate jail -r.  sigterm triggers the
+            #shutdown process
+            puts stderr "Handling SIG${signal} for background process"
+            switch -exact $signal {
+                INT {
+                    exec -ignorestderr jail -r $jail >&@ stderr
+                }
+                TERM {
+                    catch {exec -ignorestderr jexec $jail sh /etc/rc.shutdown >&@ stderr}
+                    after 2000
+                    exec -ignorestderr jail -r $jail >&@ stderr
+                }
+                default {
+                    exec jexec $jail kill "-${signal}" -1 >&@ stderr
+                }
+            }
         }
     }
 }

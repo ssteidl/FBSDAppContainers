@@ -70,6 +70,10 @@ namespace eval appc::run {
         #Initialization yield
         yield
 
+        #TODO: All parameters should be validated before any cloning is done so proper
+        # cleanup can be done.  right now we clone and then fail on poorly formatted
+        # parameters.
+        
         #TODO: IMAGE should be it's own class
         set image [dict get $args_dict "image"]
         set image_components [split $image :]

@@ -116,6 +116,16 @@ namespace
             pids.insert(std::begin(m_descendants), std::end(m_descendants));
             return pids;
         }
+
+        bool has_first_child_exited() const
+        {
+            return m_child_exited;
+        }
+
+        pid_t first_child_pid() const
+        {
+            return m_child;
+        }
     };
 
     using monitored_process_group_list = std::list<std::shared_ptr<monitored_process_group>>;
@@ -349,6 +359,12 @@ namespace
         }
     public:
 
+        /**
+         * @brief enqueue_signal_event Enqueue the signal callback into the event queue.
+         * NOTE: This could/should probably be generalized.
+         * @param interp
+         * @param callback_eval_params
+         */
         static void enqueue_signal_event(Tcl_Interp* interp, Tcl_Obj* callback_eval_params)
         {
             /*New placement because tcl event queue frees the memory*/
@@ -374,11 +390,39 @@ namespace
             return;
         }
 
+        /*The list of mpg dicts that will be returned.*/
         appc::tclobj_ptr top_level_list = appc::create_tclobj_ptr(Tcl_NewListObj(0, nullptr));
         for(auto mpg : interp_state->mpgs)
         {
+            /*Each mpg is represented by a dict:
+             * "main_pid": empty if main pid has exited.  Pid if it is still active.
+             * "active_pids": List of active pids*/
+
+            /*Create the mpg dict and add it to the top level list to be returned.*/
+            Tcl_Obj* mpg_dict = Tcl_NewDictObj();
+            int error = Tcl_ListObjAppendElement(interp_state->interp, top_level_list.get(), mpg_dict);
+            if(error)
+            {
+                Tcl_BackgroundError(interp_state->interp);
+                return;
+            }
+
+            /*Add the value of the main pid.  Empty object if the main process has exited.*/
+            appc::tclobj_ptr main_pid_val = appc::create_tclobj_ptr(Tcl_NewObj());
+            if(!mpg->has_first_child_exited())
+            {
+                main_pid_val = appc::create_tclobj_ptr(Tcl_NewWideIntObj(mpg->first_child_pid()));
+            }
+            error = Tcl_DictObjPut(interp_state->interp, mpg_dict, Tcl_NewStringObj("main_pid", -1), main_pid_val.release());
+            if(error)
+            {
+                Tcl_BackgroundError(interp_state->interp);
+                break;
+            }
+
+            /*Create the active pids list and add it to the mpg dict.*/
             Tcl_Obj* mpg_list = Tcl_NewListObj(0, nullptr);
-            int error = Tcl_ListObjAppendElement(interp_state->interp, top_level_list.get(), mpg_list);
+            error = Tcl_DictObjPut(interp_state->interp, mpg_dict, Tcl_NewStringObj("active_pids", -1), mpg_list);
             if(error)
             {
                 Tcl_BackgroundError(interp_state->interp);
@@ -397,6 +441,8 @@ namespace
                 }
             }
         }
+
+        /*Create an object with the callback elements provided as well as the top level list of mpgs*/
 
         int callback_length = 0;
         Tcl_Obj **callback_elements = nullptr;

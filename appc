@@ -1,10 +1,10 @@
 #!/usr/bin/env tclsh8.6
 # -*- mode: tcl; indent-tabs-mode: nil; tab-width: 4; -*-
 
+package require appc::build
 package require appc::env
 package require appc::export
 package require appc::native
-package require appc::build
 package require appc::import
 package require appc::metadata_db
 package require appc::repo
@@ -49,6 +49,12 @@ proc signal_handler {signal active_pid_groups} {
 
     proc find_jail_from_pid {pids} {
 
+        # Look through each pid and find the first
+        # jail listed in proc filesystem
+        #
+        # jail id is the last field in the status file for the
+        # pid
+        
         set jail {}
         foreach p $pids {
             if {$p eq {}} {
@@ -60,6 +66,7 @@ proc signal_handler {signal active_pid_groups} {
             puts stderr "jail_status: $jail_status"
             if {$jail_status ne {-} && $jail_status ne {}} {
                 set jail $jail_status
+                break
             }
         }
 
@@ -71,6 +78,8 @@ proc signal_handler {signal active_pid_groups} {
         set jail {}
         set main_pid [dict get $pid_group "main_pid"]
         dict for {key pid_list} $pid_group {
+            #Find the jail from the main pid or
+            # if main_pid has closed, from the active pids
 
             switch -exact $key {
 
@@ -82,10 +91,10 @@ proc signal_handler {signal active_pid_groups} {
                 "active_pids" {
                     set jail [find_jail_from_pid $pid_list]
                 }
+            }
 
-                default {
-                    puts stderr "Got to default"
-                }
+            if {$jail ne {}} {
+                break
             }
         }
 
@@ -121,10 +130,11 @@ proc signal_handler {signal active_pid_groups} {
                 INT {
                     #Give it 5 seconds to shutdown.
                     #TODO: We could make this configurable via the commandline
-                    after 5000
+                    after 5000 [list apply {{jid} { 
                     
-                    puts stderr "Removing jail $jail"
-                    exec -ignorestderr jail -r $jail >&@ stderr
+                        puts stderr "Removing jail $jid"
+                        exec -ignorestderr jail -r $jid >&@ stderr
+                    }} $jail]
                 }
             }
         } else {
@@ -133,15 +143,14 @@ proc signal_handler {signal active_pid_groups} {
             puts stderr "Handling SIG${signal} for background process"
             switch -exact $signal {
                 INT {
-                    exec -ignorestderr jail -r $jail >&@ stderr
+                    appc::jail::remove $jail stderr
                 }
                 TERM {
-                    catch {exec -ignorestderr jexec $jail sh /etc/rc.shutdown >&@ stderr}
-                    after 2000
-                    exec -ignorestderr jail -r $jail >&@ stderr
+                    catch {appc::jail::shutdown $jail stderr}
+                    after 2000 [list exec -ignorestderr jail -r $jail >&@ stderr]
                 }
                 default {
-                    exec jexec $jail kill "-${signal}" -1 >&@ stderr
+                    appc::jail::kill $jail "-${signal}" stderr
                 }
             }
         }

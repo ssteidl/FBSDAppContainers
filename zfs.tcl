@@ -160,7 +160,9 @@ namespace eval appc::zfs {
     }
 
     proc destroy {dataset} {
-        exec zfs destroy $dataset
+        # Force destroy. We assume that if we are
+        # destroying a dataset, we really want to destroy it.
+        exec zfs destroy -f $dataset
     }
 
     proc destroy_recursive {dataset} {

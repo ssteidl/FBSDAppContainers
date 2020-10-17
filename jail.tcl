@@ -74,6 +74,22 @@ namespace eval appc::jail {
         }
     }
 
+    proc kill {jid {signal TERM} {output_chan stderr}} {
+        # Send signal to all processes in the jail.
+        # Allow errors to propagate
+
+        return [exec -ignorestderr jexec $jid kill "-${signal}" -1 >&@ $output_chan]
+    }
+
+    proc shutdown {jid {output_chan stderr}} {
+        
+    }
+
+    proc remove {jid {output_chan stderr}} {
+
+        return [exec -ignorestderr jail -r $jid >&@ $output_chan]
+    }
+    
     proc run_jail {name mountpoint volume_datasets chan_dict network callback args} {
 
         #Create the conf file

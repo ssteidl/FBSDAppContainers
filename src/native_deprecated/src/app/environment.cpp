@@ -2,7 +2,7 @@
 #include "environment.h"
 #include <sstream>
 
-using namespace appc;
+using namespace vessel;
 
 namespace
 {

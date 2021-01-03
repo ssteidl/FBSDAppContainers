@@ -1,13 +1,13 @@
 # -*- mode: tcl; indent-tabs-mode: nil; tab-width: 4; -*-
 package require uuid
 package require fileutil
-package require appc::definition_file
-package require appc::env
-package require appc::import
-package require appc::jail
-package require appc::zfs
+package require vessel::definition_file
+package require vessel::env
+package require vessel::import
+package require vessel::jail
+package require vessel::zfs
 
-namespace eval appc::build {
+namespace eval vessel::build {
 
     namespace eval _ {
 
@@ -37,9 +37,9 @@ namespace eval appc::build {
             return $build_context
         }
 
-        proc execute_appc_file {build_context appc_file status_channel} {
+        proc execute_vessel_file {build_context vessel_file status_channel} {
 
-            #Sourcing the appc file calls the functions like RUN
+            #Sourcing the vessel file calls the functions like RUN
             # and copy at a global level.  We definitely need to do
             # that in a jail.
             set interp_name {build_interp}
@@ -65,7 +65,7 @@ namespace eval appc::build {
     proc build_command {args_dict status_channel}  {
 
         #build_context maintains the state for this build.  All
-        #of the global variables set by sourcing the appc file
+        #of the global variables set by sourcing the vessel file
         #are copied into this dict.
         set build_context [dict create \
                                cmdline_options $args_dict \
@@ -79,20 +79,20 @@ namespace eval appc::build {
                                cmd {sh /etc/rc} \
                                status_channel $status_channel]
         
-        set appc_file [dict get $build_context cmdline_options {file}]
+        set vessel_file [dict get $build_context cmdline_options {file}]
 
         #Clones the new dataset, runs commands and creates the '@a' snapshot
-        set build_context [_::execute_appc_file $build_context $appc_file $status_channel]
+        set build_context [_::execute_vessel_file $build_context $vessel_file $status_channel]
         
         #current_dataset is set by the FROM command
         set current_dataset [dict get $build_context current_dataset]
 
         #Create the b snapshot that will be used to clone children containers
 	    set bsnapshot "${current_dataset}@b"
-	    if {[appc::zfs::snapshot_exists $bsnapshot]} {
-            appc::zfs::destroy $bsnapshot
+	    if {[vessel::zfs::snapshot_exists $bsnapshot]} {
+            vessel::zfs::destroy $bsnapshot
 	    }
-	    appc::zfs::create_snapshot $current_dataset {b}
+	    vessel::zfs::create_snapshot $current_dataset {b}
         
         set guid [dict get $build_context guid]
         set name $guid
@@ -109,8 +109,8 @@ namespace eval appc::build {
         set cwd [dict get $build_context cwd]
         set parent_image [dict get $build_context parent_image]
 
-        appc::import::import_image_metadata $name $tag $cwd $cmd $parent_image
+        vessel::import::import_image_metadata $name $tag $cwd $cmd $parent_image
     }
 }
 
-package provide appc::build 1.0.0
+package provide vessel::build 1.0.0

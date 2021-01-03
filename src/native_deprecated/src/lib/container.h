@@ -14,7 +14,7 @@ extern "C"
 #include <vector>
 
 using sys_jail = struct jail;
-namespace appc
+namespace vessel
 {
     class jail
     {

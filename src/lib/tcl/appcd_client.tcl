@@ -1,9 +1,9 @@
-#Client support for communicating with appcd
+#Client support for communicating with vesseld
 package require debug
-package require appc::native
-package require appc::pty_shell
+package require vessel::native
+package require vessel::pty_shell
 
-namespace eval appcd::client {
+namespace eval vesseld::client {
     debug define client
     debug on client 1 stderr
     
@@ -12,43 +12,43 @@ namespace eval appcd::client {
 	variable conn {}
 	variable vwait_var 0
 
-	#Connects to appcd and returns a non-blocking channel
+	#Connects to vesseld and returns a non-blocking channel
 	proc connect {port} {
 
 	    debug.client "Connecting..."
 	    
 	    #TODO: Use unix socket so we can check permissions
-	    set appcd_channel [socket {localhost} $port]
+	    set vesseld_channel [socket {localhost} $port]
 	    debug.client "Connected"
 	    
-	    fconfigure $appcd_channel -encoding {utf-8} \
+	    fconfigure $vesseld_channel -encoding {utf-8} \
 		-buffering line \
 		-translation crlf \
 		-blocking 0
 
-	    return $appcd_channel
+	    return $vesseld_channel
 	}
 	
 	proc run_coroutine {options} {
 	    set args [dict get $options args]
 	    set interactive [dict get $args interactive]
-	    set appcd_chan [connect 6432]
-	    set appcd_msg [dict create cli_options $options pty {}]
+	    set vesseld_chan [connect 6432]
+	    set vesseld_msg [dict create cli_options $options pty {}]
 
 	    if {$interactive} {
 		debug.client "Opening pty for interactive use"
 		set ptys [pty::open]
 		set master_chan [lindex $ptys 0]
 		set slave_path [lindex $ptys 1]
-		set appcd_msg [dict set appcd_msg pty $slave_path]
+		set vesseld_msg [dict set vesseld_msg pty $slave_path]
 	    }
 	    
-	    puts $appcd_chan $appcd_msg
+	    puts $vesseld_chan $vesseld_msg
 
 	    if {$interactive} {
 
 		debug.client "Starting pty shell [info coroutine]"
-		appc::pty_shell::run $master_chan [info coroutine]
+		vessel::pty_shell::run $master_chan [info coroutine]
 
 		debug.client "Yielding for shell to finish"
 		yield
@@ -62,26 +62,26 @@ namespace eval appcd::client {
 	}
 
 	proc pull_coroutine {options} {
-	    set appcd_chan [connect 6432]
-	    set appcd_msg [dict create cli_options $options]
-	    fileevent $appcd_chan readable [info coroutine]
+	    set vesseld_chan [connect 6432]
+	    set vesseld_msg [dict create cli_options $options]
+	    fileevent $vesseld_chan readable [info coroutine]
 
 	    #Send the request
-	    puts $appcd_chan $appcd_msg
+	    puts $vesseld_chan $vesseld_msg
 
 	    #Response loop
 	    while {true} {
 		#Wait for a response or the connection to close
 		yield
 
-		gets $appcd_chan msg
+		gets $vesseld_chan msg
 
 		if {$msg ne {}} {
 		    puts stdout $msg
 		} else {
-		    if {[fblocked $appcd_chan]} {
+		    if {[fblocked $vesseld_chan]} {
 			continue
-		    } elseif {[eof $appcd_chan]} {
+		    } elseif {[eof $vesseld_chan]} {
 			break
 		    }
 		}
@@ -91,28 +91,28 @@ namespace eval appcd::client {
 	}
 
 	proc build_coroutine {options} {
-	    set appcd_chan [connect 6432]
-	    set appcd_msg [dict create cli_options $options]
-	    fileevent $appcd_chan readable [info coroutine]
+	    set vesseld_chan [connect 6432]
+	    set vesseld_msg [dict create cli_options $options]
+	    fileevent $vesseld_chan readable [info coroutine]
 
 	    #Send the request
-	    puts $appcd_chan $appcd_msg
+	    puts $vesseld_chan $vesseld_msg
 
-	    fconfigure $appcd_chan -blocking 0 -buffering none -translation binary 
+	    fconfigure $vesseld_chan -blocking 0 -buffering none -translation binary 
 	    
 	    #Response loop
 	    while {true} {
 		#Wait for a response or the connection to close
 		yield
 
-		gets $appcd_chan msg
+		gets $vesseld_chan msg
 
 		if {$msg ne {}} {
 		    puts stderr $msg
 		} else {
-		    if {[fblocked $appcd_chan]} {
+		    if {[fblocked $vesseld_chan]} {
 			continue
-		    } elseif {[eof $appcd_chan]} {
+		    } elseif {[eof $vesseld_chan]} {
 			break
 		    }
 		}
@@ -122,28 +122,28 @@ namespace eval appcd::client {
 	}
 
 	proc publish_coroutine {options} {
-	    set appcd_chan [connect 6432]
-	    set appcd_msg [dict create cli_options $options]
-	    fileevent $appcd_chan readable [info coroutine]
+	    set vesseld_chan [connect 6432]
+	    set vesseld_msg [dict create cli_options $options]
+	    fileevent $vesseld_chan readable [info coroutine]
 
 	    #Send the request
-	    puts $appcd_chan $appcd_msg
+	    puts $vesseld_chan $vesseld_msg
 
-	    fconfigure $appcd_chan -blocking 0 -buffering none -translation binary 
+	    fconfigure $vesseld_chan -blocking 0 -buffering none -translation binary 
 	    
 	    #Response loop
 	    while {true} {
 		#Wait for a response or the connection to close
 		yield
 
-		gets $appcd_chan msg
+		gets $vesseld_chan msg
 
 		if {$msg ne {}} {
 		    puts stderr $msg
 		} else {
-		    if {[fblocked $appcd_chan]} {
+		    if {[fblocked $vesseld_chan]} {
 			continue
-		    } elseif {[eof $appcd_chan]} {
+		    } elseif {[eof $vesseld_chan]} {
 			break
 		    }
 		}
@@ -184,4 +184,4 @@ namespace eval appcd::client {
     }
 }
 
-package provide appcd::client 1.0.0
+package provide vesseld::client 1.0.0

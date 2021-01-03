@@ -4,12 +4,12 @@ package require debug
 package require fileutil
 package require uuid
 
-package require appc::bsd
-package require appc::env
-package require appc::jail
-package require appc::zfs
+package require vessel::bsd
+package require vessel::env
+package require vessel::jail
+package require vessel::zfs
 
-namespace eval appc::run {
+namespace eval vessel::run {
 
     debug define run
     debug on run 1 stderr
@@ -26,14 +26,14 @@ namespace eval appc::run {
             set dataset [lindex $arg_list 0]
             set jail_mntpoint [lindex $arg_list 1]
 
-            if {![appc::zfs::dataset_exists $dataset]} {
-                appc::zfs::create_dataset $dataset
+            if {![vessel::zfs::dataset_exists $dataset]} {
+                vessel::zfs::create_dataset $dataset
             }
 
-            if {[catch {appc::zfs::set_mountpoint_attr $dataset $jail_mntpoint} error_msg]} {
+            if {[catch {vessel::zfs::set_mountpoint_attr $dataset $jail_mntpoint} error_msg]} {
                 debug.run "Failed to set mountpoint attribute on $dataset.  Ignoring: $error_msg"
             }
-            appc::zfs::set_jailed_attr $dataset
+            vessel::zfs::set_jailed_attr $dataset
 
             return $dataset
         }
@@ -51,7 +51,7 @@ namespace eval appc::run {
             
             if {[file exists $sourcedir] && [file isdirectory $sourcedir]} {
 
-                appc::bsd::null_mount $sourcedir $jailed_dest_path
+                vessel::bsd::null_mount $sourcedir $jailed_dest_path
             } else {
 
                 return -code error -errorcode {MOUNT DEST EEXIST} "Source path for volume argument does not exist"
@@ -86,14 +86,14 @@ namespace eval appc::run {
             set tag [dict get $args_dict tag]
         }
 
-        set mountpoints_dict [appc::zfs::get_mountpoints]
+        set mountpoints_dict [vessel::zfs::get_mountpoints]
 
         if {$tag eq {local}} {
             #If tag is the special name "local" then don't clone the dataset.  This can
             #can be useful for development and testing.
             set tag {local}
         }
-        set image_dataset [appc::env::get_dataset_from_image_name $image_name $tag]
+        set image_dataset [vessel::env::get_dataset_from_image_name $image_name $tag]
         debug.run "RUN COMMAND image dataset: $image_dataset"
 
         if {![dict exists $mountpoints_dict $image_dataset]} {
@@ -102,22 +102,22 @@ namespace eval appc::run {
                 "Automatically pulling images is NYI"
         }
 
-        set b_snapshot_exists [appc::zfs::snapshot_exists "${image_dataset}@b"]
+        set b_snapshot_exists [vessel::zfs::snapshot_exists "${image_dataset}@b"]
         debug.run "RUN COMMAND b snapshot exists: $b_snapshot_exists"
         if {$b_snapshot_exists && $tag ne {local}} {
 
             set uuid [uuid::uuid generate]
-            set container_dataset [appc::env::get_dataset_from_image_name $image_name ${tag}/${uuid}]
+            set container_dataset [vessel::env::get_dataset_from_image_name $image_name ${tag}/${uuid}]
 
             puts stderr "Cloning b snapshot: ${image_dataset}@b $container_dataset"
-            appc::zfs::clone_snapshot "${image_dataset}@b" $container_dataset
+            vessel::zfs::clone_snapshot "${image_dataset}@b" $container_dataset
         } else {
 
             #Support manually created or pulled datasets
             set container_dataset "${image_dataset}"
         }
         
-        set mountpoint [appc::zfs::get_mountpoint $container_dataset]
+        set mountpoint [vessel::zfs::get_mountpoint $container_dataset]
 
         #nullfs volume mounts
         set jailed_mount_paths [list]
@@ -131,7 +131,7 @@ namespace eval appc::run {
             lappend volume_datasets $dataset
         }
 
-        appc::env::copy_resolv_conf $mountpoint
+        vessel::env::copy_resolv_conf $mountpoint
         
         set command [dict get $args_dict "command"]
         set jail_name [uuid::uuid generate]
@@ -141,7 +141,7 @@ namespace eval appc::run {
 
         set coro_name [info coroutine]
         set error [catch {
-            appc::jail::run_jail $jail_name $mountpoint $volume_datasets $chan_dict $network $coro_name {*}$command
+            vessel::jail::run_jail $jail_name $mountpoint $volume_datasets $chan_dict $network $coro_name {*}$command
         } error_msg info_dict]
         if {$error} {
             return -code error -errorcode {APPC JAIL EXEC} "Error running jail: $error_msg"
@@ -158,13 +158,13 @@ namespace eval appc::run {
         }
 
         debug.run "Unmounting jail dev filesystem"
-        if {[catch {appc::bsd::umount "${mountpoint}/dev"} error_msg]} {
+        if {[catch {vessel::bsd::umount "${mountpoint}/dev"} error_msg]} {
             puts stderr "Unable to umount dev filesystem, continuing on...: $error_msg"
         }
 
         debug.run "Unmounting nullfs volumes"
         foreach volume_mount $jailed_mount_paths {
-            set error [catch {appc::bsd::umount $volume_mount} error_msg]
+            set error [catch {vessel::bsd::umount $volume_mount} error_msg]
             if {$error} {
                 puts stderr "Error unmounting $volume_mount: $error_msg"
             }
@@ -178,11 +178,11 @@ namespace eval appc::run {
         
         if {[dict get $args_dict "remove"]} {
             debug.run "Destroying container dataset: $container_dataset"
-            appc::zfs::destroy $container_dataset
+            vessel::zfs::destroy $container_dataset
         }
 
         debug.run "Finished running container: $jail_name"
     }
 }
 
-package provide appc::run 1.0.0
+package provide vessel::run 1.0.0

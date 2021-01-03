@@ -1,9 +1,9 @@
-package require appc::native
-package require appc::bsd
-package require appc::env
-package require appc::jail
-package require appc::metadata_db
-package require appc::zfs
+package require vessel::native
+package require vessel::bsd
+package require vessel::env
+package require vessel::jail
+package require vessel::metadata_db
+package require vessel::zfs
 package require fileutil
 package require uuid
 
@@ -20,12 +20,12 @@ set status_channel stderr
 
 set command_queue [list]
 
-namespace eval appc::file_commands::_ {
+namespace eval vessel::file_commands::_ {
     proc fetch_image {image_dataset name version status_channel} {
 
 	#Download an image.  Ideally we just pull from a repo like
 	#any other image.  For now we have a special function because
-	#it's not an actual appc image.  Just a tarball
+	#it's not an actual vessel image.  Just a tarball
 	
 	if {$name ne "FreeBSD" } {
 	    
@@ -33,19 +33,19 @@ namespace eval appc::file_commands::_ {
 		"Only FreeBSD images are currently allowed"
 	}
 
-	set mountpoint [appc::zfs::get_mountpoint $image_dataset]
+	set mountpoint [vessel::zfs::get_mountpoint $image_dataset]
 	
 	#TODO: Support a registry.  For now only support
 	#freebsd base.txz
 
 	#We require the image to be the same as the
 	#host architecture
-	set arch [appc::bsd::host_architecture]
+	set arch [vessel::bsd::host_architecture]
 
 	set url "https://ftp.freebsd.org/pub/FreeBSD/releases/$arch/$version/base.txz"
 
 	set old_pwd [pwd]
-	set download_dir [appc::env::image_download_dir]
+	set download_dir [vessel::env::image_download_dir]
 	try {
 	    #We used to pipe these two command together but that would cause issues
 	    #with slower internet.
@@ -78,9 +78,9 @@ proc FROM {image} {
     set parent_image $image
     puts stderr "FROM: $image"
 
-    set pool [appc::env::get_pool]
+    set pool [vessel::env::get_pool]
 
-    set appc_parent_dataset [appc::env::get_dataset]
+    set vessel_parent_dataset [vessel::env::get_dataset]
     
     #Image is in the form <image name>:<version>
     #So image name is the dataset and version is the snapshot name
@@ -95,21 +95,21 @@ proc FROM {image} {
     set image_name [lindex $image_tuple 0]
     set image_version [lindex $image_tuple 1]
     set snapshot_name "${image_name}:${image_version}@${image_version}"
-    set snapshot_path "${appc_parent_dataset}/${snapshot_name}"
+    set snapshot_path "${vessel_parent_dataset}/${snapshot_name}"
 
-    set snapshot_exists [appc::zfs::snapshot_exists $snapshot_path]
+    set snapshot_exists [vessel::zfs::snapshot_exists $snapshot_path]
 
     if {!$snapshot_exists} {
 
-	set image_dataset "${appc_parent_dataset}/${image_name}:${image_version}"
-	appc::zfs::create_dataset $image_dataset
+	set image_dataset "${vessel_parent_dataset}/${image_name}:${image_version}"
+	vessel::zfs::create_dataset $image_dataset
 
 	#TODO: This fetch_image should really be just another image.  For now it's a
 	#special case.
-	appc::file_commands::_::fetch_image $image_dataset $image_name $image_version $status_channel
-	appc::metadata_db::write_metadata_file $image_name $image_version {/} {/etc/rc} \
+	vessel::file_commands::_::fetch_image $image_dataset $image_name $image_version $status_channel
+	vessel::metadata_db::write_metadata_file $image_name $image_version {/} {/etc/rc} \
 	    [list]
-	appc::zfs::create_snapshot $image_dataset $image_version
+	vessel::zfs::create_snapshot $image_dataset $image_version
     }
 
     # Clone base jail and name new dataset with guid
@@ -133,20 +133,20 @@ proc FROM {image} {
     #dataset with different versions doesn't really make sense as the data in
     #the parent is not necessarily relevant to the data in all children. One could be
     #FBSD 11 and the other FBSD 12.  Anyway, handle the tag here.
-    set new_dataset "${appc_parent_dataset}/${name}:${tag}"
-    if {![appc::zfs::dataset_exists $new_dataset]} {
-	appc::zfs::clone_snapshot $snapshot_path $new_dataset
+    set new_dataset "${vessel_parent_dataset}/${name}:${tag}"
+    if {![vessel::zfs::dataset_exists $new_dataset]} {
+	vessel::zfs::clone_snapshot $snapshot_path $new_dataset
     }
     
-    if {![appc::zfs::snapshot_exists "${new_dataset}@a"]} {
+    if {![vessel::zfs::snapshot_exists "${new_dataset}@a"]} {
 	#Snapshot with version a is used for zfs diff
-	appc::zfs::create_snapshot $new_dataset a
+	vessel::zfs::create_snapshot $new_dataset a
     }
 
     #Set the current_dataset global var
     set current_dataset $new_dataset
 
-    set mountpoint [appc::zfs::get_mountpoint $new_dataset]
+    set mountpoint [vessel::zfs::get_mountpoint $new_dataset]
 
     set from_called true
     return
@@ -222,20 +222,20 @@ proc RUN {args} {
     try {
 
 	#Copy resolv conf so we can access the internet
-	appc::env::copy_resolv_conf $mountpoint
+	vessel::env::copy_resolv_conf $mountpoint
 	
 	#Empty callback signifies blocking mode
 	set callback {}
 
 	set volumes [list]
-        appc::jail::run_jail "${name}-buildcmd" $mountpoint $volumes $channel_dict $network $callback {*}$args
+        vessel::jail::run_jail "${name}-buildcmd" $mountpoint $volumes $channel_dict $network $callback {*}$args
     } trap {CHILDSTATUS} {results options} {
 
         puts stderr "Run failed: $results"
         return -code error -errorcode {BUILD RUN}
     } finally {
 	
-	appc::env::remove_resolv_conf $mountpoint
+	vessel::env::remove_resolv_conf $mountpoint
     }
 
     return

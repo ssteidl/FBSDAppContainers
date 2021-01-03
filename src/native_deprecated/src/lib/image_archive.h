@@ -4,7 +4,7 @@
 #include <functional>
 #include <sys/types.h>
 
-namespace appc
+namespace vessel
 {
 
 class fs_path;

@@ -1,6 +1,6 @@
 # -*- mode: tcl; indent-tabs-mode: nil; tab-width: 4; -*-
 
-namespace eval appc::zfs {
+namespace eval vessel::zfs {
     #TODO: Make ensemble
     
     proc get_pools {} {
@@ -260,4 +260,4 @@ namespace eval appc::zfs {
     variable mountpoints_dict [get_mountpoints]
 }
 
-package provide appc::zfs 1.0.0
+package provide vessel::zfs 1.0.0

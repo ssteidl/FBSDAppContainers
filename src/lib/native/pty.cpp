@@ -133,24 +133,24 @@ Pty_MakeRaw(ClientData clientData,
     Tcl_Obj* chan_name = objv[1];
 
     long handle = -1;
-    int tcl_error = appc::get_handle_from_channel(interp, chan_name, handle);
+    int tcl_error = vessel::get_handle_from_channel(interp, chan_name, handle);
     if(tcl_error) return tcl_error;
 
     termios tios;
     int error = tcgetattr((int)handle, &tios);
     if(error == -1)
     {
-        return appc::syserror_result(interp, "PTY", "TCGETATTR");
+        return vessel::syserror_result(interp, "PTY", "TCGETATTR");
     }
 
     /*Create byte array that can be used for restoring settings*/
-    appc::tclobj_ptr old_tios = appc::create_tclobj_ptr(Tcl_NewByteArrayObj((unsigned char*)&tios, sizeof(tios)));
+    vessel::tclobj_ptr old_tios = vessel::create_tclobj_ptr(Tcl_NewByteArrayObj((unsigned char*)&tios, sizeof(tios)));
 
     cfmakeraw(&tios);
     error = tcsetattr((int)handle, TCSANOW, &tios);
     if(error == -1)
     {
-        return appc::syserror_result(interp, "PTY", "TCSETATTR");
+        return vessel::syserror_result(interp, "PTY", "TCSETATTR");
     }
 
     Tcl_IncrRefCount(old_tios.get());
@@ -172,12 +172,12 @@ Pty_CopyWindowSize(ClientData clientData,
 
     Tcl_Obj* src_chan_name = objv[1];
     long src_handle = -1;
-    int tcl_error = appc::get_handle_from_channel(interp, src_chan_name, src_handle);
+    int tcl_error = vessel::get_handle_from_channel(interp, src_chan_name, src_handle);
     if(tcl_error) return tcl_error;
 
     Tcl_Obj* dest_chan_name = objv[2];
     long dest_handle = -1;
-    tcl_error = appc::get_handle_from_channel(interp, dest_chan_name, dest_handle);
+    tcl_error = vessel::get_handle_from_channel(interp, dest_chan_name, dest_handle);
     if(tcl_error) return tcl_error;
 
     winsize ws;
@@ -185,13 +185,13 @@ Pty_CopyWindowSize(ClientData clientData,
     int error = ioctl((int)src_handle, TIOCGWINSZ, &ws);
     if(error == -1)
     {
-        return appc::syserror_result(interp, "PTY", "WINSZ", "TIOCGWINSZ");
+        return vessel::syserror_result(interp, "PTY", "WINSZ", "TIOCGWINSZ");
     }
 
     error = ioctl((int)dest_handle, TIOCSWINSZ, &ws);
     if(error == -1)
     {
-        return appc::syserror_result(interp, "PTY", "WINSZ", "TIOCSWINSZ");
+        return vessel::syserror_result(interp, "PTY", "WINSZ", "TIOCSWINSZ");
     }
     return TCL_OK;
 }
@@ -209,7 +209,7 @@ Pty_TermiosRestore(ClientData clientData,
     }
 
     long handle = 0;
-    int tcl_error = appc::get_handle_from_channel(interp, objv[1], handle);
+    int tcl_error = vessel::get_handle_from_channel(interp, objv[1], handle);
     if(tcl_error) return tcl_error;
 
     int length = 0;
@@ -217,7 +217,7 @@ Pty_TermiosRestore(ClientData clientData,
     int error = tcsetattr((int)handle, TCSANOW, (termios*)termios_bytes);
     if(error == -1)
     {
-        return appc::syserror_result(interp, "PTY", "TCSETATTR");
+        return vessel::syserror_result(interp, "PTY", "TCSETATTR");
     }
 
     return TCL_OK;

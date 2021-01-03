@@ -1,6 +1,6 @@
 # -*- mode: tcl; indent-tabs-mode: nil; tab-width: 4; -*-
 
-namespace eval appc::bsd {
+namespace eval vessel::bsd {
 
     proc host_architecture {} {
 
@@ -36,4 +36,4 @@ namespace eval appc::bsd {
     }
 }
 
-package provide appc::bsd 1.0.0
+package provide vessel::bsd 1.0.0

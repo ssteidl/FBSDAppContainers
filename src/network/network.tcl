@@ -1,6 +1,6 @@
 package require TclOO
-package require appc::name-gen
-namespace eval appc::network {
+package require vessel::name-gen
+namespace eval vessel::network {
 
     namespace eval _ {
 
@@ -22,7 +22,7 @@ namespace eval appc::network {
 	    
 	    constructor {network_name jid ip} {
 		set _jid $jid
-		set _epair_interface_obj [appc::network::epair new "${network_name}${jid}"]
+		set _epair_interface_obj [vessel::network::epair new "${network_name}${jid}"]
 		set _ip $ip
 	    }
 
@@ -236,7 +236,7 @@ namespace eval appc::network {
 
 	    set _network_name $network_name
 	    set _bridge_obj_ref $bridge_obj
-	    set _epair_obj [appc::network::epair new "${network_name}"]
+	    set _epair_obj [vessel::network::epair new "${network_name}"]
 	    $_epair_obj add_to_bridge $_bridge_obj_ref
 
 	    if {$ip ne {} } {
@@ -253,7 +253,7 @@ namespace eval appc::network {
 
 	    if {![dict exists $_jail_dict $jid]} {
 
-		set netjail_obj [appc::network::_::network_jail new $_network_name $jid $ip]
+		set netjail_obj [vessel::network::_::network_jail new $_network_name $jid $ip]
 		dict set $_jail_dict $jid $netjail_obj
 		$netjail_obj connect_to_network $_bridge_obj_ref
 		
@@ -285,7 +285,7 @@ namespace eval appc::network {
 
 	set bridge $main_bridge
 	if {$main_bridge eq {}} {
-	    set main_bridge [bridge new {appcbridge}]
+	    set main_bridge [bridge new {vesselbridge}]
 	}
 	
 	set network {}
@@ -317,10 +317,10 @@ namespace eval appc::network {
 	if {[dict exists $args_dict name]} {
 	    set network_name [dict get $args_dict name]
 	} else {
-	    set network_name [appc::name-gen::generate-name 2 {} {} {network}]
+	    set network_name [vessel::name-gen::generate-name 2 {} {} {network}]
 	}
 
 	return [create $network_name]
     }
 }
-package provide appc::network 1.0.0
+package provide vessel::network 1.0.0

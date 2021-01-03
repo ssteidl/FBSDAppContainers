@@ -38,8 +38,8 @@ namespace
         std::ostringstream msg;
         /*Probably not great design to output help from the library but
          * it's simple and good enough for now*/
-        msg << "appcd build <--file=appcd_file> <--name=image-name> <--tag=tag>" << std::endl
-            << "--file    Path to the appc file used to build the image" << std::endl
+        msg << "vesseld build <--file=vesseld_file> <--name=image-name> <--tag=tag>" << std::endl
+            << "--file    Path to the vessel file used to build the image" << std::endl
             << "--name    Name of the image" << std::endl
             << "--tag     Tag for the image.  Only one tag is accepted.  Default is 'latest'" << std::endl;
 
@@ -62,7 +62,7 @@ namespace
 
         int ch = -1;
 
-        appc::tclobj_ptr args_dict(Tcl_NewDictObj(), appc::unref_tclobj);
+        vessel::tclobj_ptr args_dict(Tcl_NewDictObj(), vessel::unref_tclobj);
         int tcl_error = TCL_OK;
         while((ch = getopt_long(argc, (char* const *)argv.data(), "f:hn:t:", long_opts, nullptr)) != -1)
         {
@@ -127,8 +127,8 @@ namespace
 
         int ch = -1;
 
-        appc::tclobj_ptr args_dict(Tcl_NewDictObj(), appc::unref_tclobj);
-        appc::tclobj_ptr dns_list(Tcl_NewListObj(0, nullptr), appc::unref_tclobj);
+        vessel::tclobj_ptr args_dict(Tcl_NewDictObj(), vessel::unref_tclobj);
+        vessel::tclobj_ptr dns_list(Tcl_NewListObj(0, nullptr), vessel::unref_tclobj);
         int tcl_error = TCL_OK;
         while((ch = getopt_long(argc, (char* const *)argv.data(), "n:d:i:", long_opts, nullptr)) != -1)
         {
@@ -168,7 +168,7 @@ namespace
     std::string run_options_help()
     {
         std::ostringstream msg;
-        msg << "appc run <--name=container_name> {--interactive} {--rm} {--volume=/path/to/hostdir:/path/to/mountdir} \n{--dataset=zfs/dataset:container_mountpoint} image{:tag} {command...}" << std::endl << std::endl
+        msg << "vessel run <--name=container_name> {--interactive} {--rm} {--volume=/path/to/hostdir:/path/to/mountdir} \n{--dataset=zfs/dataset:container_mountpoint} image{:tag} {command...}" << std::endl << std::endl
             << "--name        Name of the new container" << std::endl
             << "--interactive Start an interactive shell via pty" << std::endl
             << "--rm          Remove the image after it exits" << std::endl
@@ -181,7 +181,7 @@ namespace
     int parse_run_options(Tcl_Interp* interp, int argc, Tcl_Obj** args, Tcl_Obj* options_dict)
     {
         /*At some point we will have a server and need a -it flag*/
-        /*appc run <layer> */
+        /*vessel run <layer> */
 
         assert(argc > 0);
 
@@ -201,12 +201,12 @@ namespace
         int ch = -1;
 
         bool remove_container = false;
-        appc::tclobj_ptr args_dict(Tcl_NewDictObj(), appc::unref_tclobj);
+        vessel::tclobj_ptr args_dict(Tcl_NewDictObj(), vessel::unref_tclobj);
         int tcl_error = TCL_OK;
         bool interactive = false;
         std::string network("inherit");
-        appc::tclobj_ptr dataset_list(Tcl_NewListObj(0, nullptr), appc::unref_tclobj);
-        appc::tclobj_ptr volume_list(Tcl_NewListObj(0, nullptr), appc::unref_tclobj);
+        vessel::tclobj_ptr dataset_list(Tcl_NewListObj(0, nullptr), vessel::unref_tclobj);
+        vessel::tclobj_ptr volume_list(Tcl_NewListObj(0, nullptr), vessel::unref_tclobj);
         while((ch = getopt_long(argc, (char* const *)argv.data(), "d:iv:hn:u:", long_opts, nullptr)) != -1)
         {
             switch(ch)
@@ -302,7 +302,7 @@ namespace
 
         if (optind < argc)
         {
-            appc::tclobj_ptr command_list(Tcl_NewListObj(0, nullptr), appc::unref_tclobj);
+            vessel::tclobj_ptr command_list(Tcl_NewListObj(0, nullptr), vessel::unref_tclobj);
 
             for(; optind < argc; ++optind)
             {
@@ -355,7 +355,7 @@ namespace
 
         std::string image{};
         std::string tag{};
-        appc::tclobj_ptr args_dict(Tcl_NewDictObj(), appc::unref_tclobj);
+        vessel::tclobj_ptr args_dict(Tcl_NewDictObj(), vessel::unref_tclobj);
         int tcl_error = TCL_OK;
         while((ch = getopt_long(argc, (char* const *)argv.data(), "ht:", long_opts, nullptr)) != -1)
         {
@@ -422,8 +422,8 @@ namespace
     std::string image_options_help()
     {
         std::ostringstream msg;
-        msg << "appcd image <options>" << std::endl
-            << "--list    List all images available in the appc dataset" << std::endl
+        msg << "vesseld image <options>" << std::endl
+            << "--list    List all images available in the vessel dataset" << std::endl
             << "--help    Print this help message" << std::endl;
 
         return msg.str();
@@ -451,7 +451,7 @@ namespace
         int ch = -1;
 
         bool list = false;
-        appc::tclobj_ptr args_dict(Tcl_NewDictObj(), appc::unref_tclobj);
+        vessel::tclobj_ptr args_dict(Tcl_NewDictObj(), vessel::unref_tclobj);
         int tcl_error = TCL_OK;
         while((ch = getopt_long(argc, (char* const *)argv.data(), "hl", long_opts, nullptr)) != -1)
         {
@@ -505,7 +505,7 @@ namespace
     std::string export_options_help()
     {
         std::ostringstream msg;
-        msg << "appc export {--dir} image:tag" << std::endl
+        msg << "vessel export {--dir} image:tag" << std::endl
             << "--dir     Directory to output the image" << std::endl
             << "--help    Print this help message" << std::endl;
 
@@ -535,15 +535,15 @@ namespace
 
         char pwd_buf[MAXPATHLEN+1];
         memset(pwd_buf, 0, sizeof(pwd_buf));
-        appc::tclobj_ptr pwd_obj(Tcl_NewStringObj(getwd(pwd_buf), -1), appc::unref_tclobj);
-        appc::tclobj_ptr args_dict(Tcl_NewDictObj(), appc::unref_tclobj);
+        vessel::tclobj_ptr pwd_obj(Tcl_NewStringObj(getwd(pwd_buf), -1), vessel::unref_tclobj);
+        vessel::tclobj_ptr args_dict(Tcl_NewDictObj(), vessel::unref_tclobj);
         int tcl_error = TCL_OK;
         while((ch = getopt_long(argc, (char* const *)argv.data(), "d:h", long_opts, nullptr)) != -1)
         {
             switch(ch)
             {
             case 'd':
-                pwd_obj = appc::tclobj_ptr(Tcl_NewStringObj(optarg, -1), appc::unref_tclobj);
+                pwd_obj = vessel::tclobj_ptr(Tcl_NewStringObj(optarg, -1), vessel::unref_tclobj);
                 break;
             case 'h':
             {
@@ -586,7 +586,7 @@ namespace
                        pwd_obj.release());
         if(tcl_error) return tcl_error;
 
-        appc::tclobj_ptr image_obj(Tcl_NewStringObj(argv[optind], -1), appc::unref_tclobj);
+        vessel::tclobj_ptr image_obj(Tcl_NewStringObj(argv[optind], -1), vessel::unref_tclobj);
         tcl_error = Tcl_DictObjPut(interp, args_dict.get(),
                        Tcl_NewStringObj("image", -1),
                        image_obj.release());
@@ -601,7 +601,7 @@ namespace
     }
 
     /**
-     * appc::parse_options $argc $argv
+     * vessel::parse_options $argc $argv
      */
     int Appc_ParseOptions(void *clientData, Tcl_Interp *interp,
                           int objc, struct Tcl_Obj *const *objv)
@@ -628,7 +628,7 @@ namespace
             return TCL_ERROR;
         }
 
-        appc::tclobj_ptr command_options(Tcl_NewDictObj(), appc::unref_tclobj);
+        vessel::tclobj_ptr command_options(Tcl_NewDictObj(), vessel::unref_tclobj);
         Tcl_Obj* pre_command_flags = Tcl_NewDictObj();
         tcl_error = Tcl_DictObjPut(interp, command_options.get(),
                                    Tcl_NewStringObj("pre_command_flags", -1),
@@ -723,7 +723,7 @@ namespace
     int Appc_DNSParseQuery(void *clientData, Tcl_Interp *interp,
                            int objc, struct Tcl_Obj *const *objv)
     {
-        /*appc::dns::parse_query <binary obj>
+        /*vessel::dns::parse_query <binary obj>
          * @returns array with the following keys:
          *     qname, type, class
          */
@@ -805,14 +805,14 @@ namespace
 
     void init_dns(Tcl_Interp* interp)
     {
-        (void)Tcl_CreateObjCommand(interp, "appc::dns::parse_query", Appc_DNSParseQuery, nullptr, nullptr);
-        (void)Tcl_CreateObjCommand(interp, "appc::dns::generate_A_response", Appc_DNSGenerateAResponse,
+        (void)Tcl_CreateObjCommand(interp, "vessel::dns::parse_query", Appc_DNSParseQuery, nullptr, nullptr);
+        (void)Tcl_CreateObjCommand(interp, "vessel::dns::generate_A_response", Appc_DNSGenerateAResponse,
                                    nullptr, nullptr);
     }
 
     void init_url(Tcl_Interp* interp)
     {
-        (void)Tcl_CreateObjCommand(interp, "appc::url::parse", Appc_ParseURL, nullptr, nullptr);
+        (void)Tcl_CreateObjCommand(interp, "vessel::url::parse", Appc_ParseURL, nullptr, nullptr);
     }
 
     void init_exec(Tcl_Interp* interp)
@@ -837,14 +837,14 @@ extern int Appctcl_Init(Tcl_Interp* interp)
         return TCL_ERROR;
     }
 
-    (void)Tcl_CreateObjCommand(interp, "appc::parse_options", Appc_ParseOptions, nullptr, nullptr);
+    (void)Tcl_CreateObjCommand(interp, "vessel::parse_options", Appc_ParseOptions, nullptr, nullptr);
 
     init_dns(interp);
     init_url(interp);
     init_exec(interp);
     Pty_Init(interp);
     Udp_Init(interp);
-    Tcl_PkgProvide(interp, "appc::native", "1.0.0");
+    Tcl_PkgProvide(interp, "vessel::native", "1.0.0");
 
     return TCL_OK;
 }

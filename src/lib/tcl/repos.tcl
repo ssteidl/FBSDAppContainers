@@ -1,12 +1,12 @@
 package require debug
-package require appc::env
-package require appc::native
+package require vessel::env
+package require vessel::native
 package require defer
 package require fileutil
 package require uri
 package require TclOO
 
-namespace eval appc::repo {
+namespace eval vessel::repo {
 
     debug define repo
     debug on repo 1 stderr
@@ -21,7 +21,7 @@ namespace eval appc::repo {
 	    set _full_url ${url}
 	    
 	    #Parse it to ensure it is valid
-	    set url_dict [appc::url::parse ${url}]
+	    set url_dict [vessel::url::parse ${url}]
 
 	    set _scheme [dict get $url_dict scheme]
 	   
@@ -115,7 +115,7 @@ namespace eval appc::repo {
 	    set output_path [my get_path]
 
 	    #TODO: Parse out image name from image path
-	    set repo_url [appc::env::get_repo_url]
+	    set repo_url [vessel::env::get_repo_url]
 
 	    set image_path_components [file split $image_path]
 	    set image_zip_name [lrange $image_path_components end end]
@@ -190,7 +190,7 @@ namespace eval appc::repo {
     }
     
     proc repo_factory {repo_url} {
-	set repo_url_dict [appc::url::parse $repo_url]
+	set repo_url_dict [vessel::url::parse $repo_url]
 
 	set scheme [dict get $repo_url_dict scheme]
 	set path [dict get $repo_url_dict path]
@@ -200,10 +200,10 @@ namespace eval appc::repo {
 
 	    file {
 		
-		return [appc::repo::file_repo new $repo_url]
+		return [vessel::repo::file_repo new $repo_url]
 	    }
 	    s3 {
-		return [appc::repo::s3repo new $repo_url]
+		return [vessel::repo::s3repo new $repo_url]
 	    }
 	    default {
 		return -code error -errorcode {PUBLISH SCHEME ENOTSUPPORTED } \
@@ -214,4 +214,4 @@ namespace eval appc::repo {
     }
 }
 
-package provide appc::repo 1.0.0
+package provide vessel::repo 1.0.0

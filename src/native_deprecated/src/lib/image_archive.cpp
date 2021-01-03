@@ -15,7 +15,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
-using namespace appc;
+using namespace vessel;
 
 namespace
 {
@@ -225,7 +225,7 @@ namespace
     }
 }
 
-int appc::create_image(const fs_path &source, const fs_path &dest)
+int vessel::create_image(const fs_path &source, const fs_path &dest)
 {
     if(!source.exists())
     {
@@ -253,7 +253,7 @@ int appc::create_image(const fs_path &source, const fs_path &dest)
     return exit_code;
 }
 
-void appc::archive_image(const fs_path& image, const fs_path& archive_dir,
+void vessel::archive_image(const fs_path& image, const fs_path& archive_dir,
                          const compression_progress_callback& progress_cb)
 {
     fs_path output_file{archive_dir};

@@ -3,9 +3,9 @@
 #include <iostream>
 #include <image_archive.h>
 
-using namespace appc::funcs;
+using namespace vessel::funcs;
 
-void appc::funcs::auto_unmount(appc::mountpoint* mnt)
+void vessel::funcs::auto_unmount(vessel::mountpoint* mnt)
 {
     if(mnt == nullptr)
     {
@@ -20,7 +20,7 @@ void appc::funcs::auto_unmount(appc::mountpoint* mnt)
 }
 
 auto_unmount_ptr
-appc::funcs::mount_container_image(commandline &cmdline, environment& env)
+vessel::funcs::mount_container_image(commandline &cmdline, environment& env)
 {
     if(cmdline.container.empty())
     {
@@ -72,7 +72,7 @@ appc::funcs::mount_container_image(commandline &cmdline, environment& env)
     return mntpoint;
 }
 
-void appc::funcs::save_container_image(commandline& cmdline, environment& env)
+void vessel::funcs::save_container_image(commandline& cmdline, environment& env)
 {
     if(!cmdline.do_save)
     {

@@ -1,4 +1,4 @@
-#include <appc_tcl.h>
+#include <vessel_tcl.h>
 #include <cassert>
 #include <cstdlib>
 #include "fs.h"
@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <vector>
 
-using namespace appc;
+using namespace vessel;
 
 /**************path_stat****************************/
 
@@ -265,7 +265,7 @@ fs_path fs_path::find_dir(const std::string& dir_name) const
 
     globtype.type = TCL_GLOB_TYPE_DIR;
 
-    //Search for a folder with the image name in the appc_image_dir
+    //Search for a folder with the image name in the vessel_image_dir
     int tcl_error = Tcl_FSMatchInDirectory(interp.get(), result_list, m_path,
                                             dir_name.c_str(), &globtype);
 
@@ -310,7 +310,7 @@ fs_path::~fs_path()
 {}
 
 /*****************functions************************************/
-void appc::validate_directory(const fs_path& path)
+void vessel::validate_directory(const fs_path& path)
 {
     if(!path.exists())
     {

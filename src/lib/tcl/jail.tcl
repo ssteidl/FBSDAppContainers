@@ -1,10 +1,10 @@
 # -*- mode: tcl; indent-tabs-mode: nil; tab-width: 4; -*-
 
-package require appc::native
-package require appc::env
+package require vessel::native
+package require vessel::env
 package require textutil::expander
 
-namespace eval appc::jail {
+namespace eval vessel::jail {
 
     namespace eval _ {
 
@@ -110,8 +110,8 @@ namespace eval appc::jail {
         if {$callback ne {}} {
             set _callback [list $callback $jail_conf_file] 
         }
-        appc::exec $chan_dict ${_callback} {*}$jail_command
+        vessel::exec $chan_dict ${_callback} {*}$jail_command
     }
 }
 
-package provide appc::jail 1.0.0
+package provide vessel::jail 1.0.0

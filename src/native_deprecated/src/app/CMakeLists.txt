@@ -1,7 +1,7 @@
-add_executable(appc
+add_executable(vessel
   app_containers.cpp
   app_functions.cpp
   cmdline.cpp
   environment.cpp
 )
-target_link_libraries(appc appc-priv archive)
+target_link_libraries(vessel vessel-priv archive)

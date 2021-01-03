@@ -11,7 +11,7 @@
 #include <sys/param.h>
 #include <sys/mount.h>
 
-namespace appc
+namespace vessel
 {
     class mountpoint
     {

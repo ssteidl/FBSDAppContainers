@@ -1,8 +1,8 @@
 #include "tcl_util.h"
 
-using namespace appc;
+using namespace vessel;
 
-void appc::unref_tclobj(Tcl_Obj* obj)
+void vessel::unref_tclobj(Tcl_Obj* obj)
 {
     if(obj)
     {
@@ -10,17 +10,17 @@ void appc::unref_tclobj(Tcl_Obj* obj)
     }
 }
 
-void appc::tclobj_delete_proc(void* client_data, Tcl_Interp* interp)
+void vessel::tclobj_delete_proc(void* client_data, Tcl_Interp* interp)
 {
     Tcl_DecrRefCount((Tcl_Obj*)client_data);
 }
 
-tclobj_ptr appc::create_tclobj_ptr(Tcl_Obj* obj)
+tclobj_ptr vessel::create_tclobj_ptr(Tcl_Obj* obj)
 {
-    return tclobj_ptr(obj, appc::unref_tclobj);
+    return tclobj_ptr(obj, vessel::unref_tclobj);
 }
 
-int appc::get_handle_from_channel(Tcl_Interp* interp, Tcl_Obj* chan_name, long& handle)
+int vessel::get_handle_from_channel(Tcl_Interp* interp, Tcl_Obj* chan_name, long& handle)
 {
     /*Note: handle is of type long because that is the size of a void* which is what
      * is used to retrieve the handle.  If you pass it an int, bad things happen because

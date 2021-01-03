@@ -1,11 +1,11 @@
 #include "app_functions.h"
-#include "appc_tcl.h"
+#include "vessel_tcl.h"
 #include "cmdline.h"
 #include "environment.h"
 #include "image_archive.h"
 #include <iostream>
 
-using namespace appc;
+using namespace vessel;
 
 int run_main(int argc, char** argv)
 {
@@ -14,7 +14,7 @@ int run_main(int argc, char** argv)
 
     environment env;
 
-    appc::funcs::save_container_image(*cmdline, env);
+    vessel::funcs::save_container_image(*cmdline, env);
     return 0;
 }
 

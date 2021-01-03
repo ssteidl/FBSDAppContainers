@@ -4,7 +4,7 @@
 #include <tcl.h>
 #include <memory>
 
-namespace appc
+namespace vessel
 {
 
 void delete_interp(Tcl_Interp* interp);

@@ -6,7 +6,7 @@
 #include <tcl.h>
 
 
-namespace appc
+namespace vessel
 {
 
 void unref_tclobj(Tcl_Obj* obj);

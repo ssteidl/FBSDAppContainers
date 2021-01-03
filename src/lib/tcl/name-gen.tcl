@@ -1,4 +1,4 @@
-namespace eval appc::name-gen {
+namespace eval vessel::name-gen {
     
     namespace eval _ {
 	variable name_list [list]
@@ -50,4 +50,4 @@ namespace eval appc::name-gen {
     }
 }
 
-package provide appc::name-gen 1.0.0
+package provide vessel::name-gen 1.0.0

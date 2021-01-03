@@ -133,22 +133,22 @@ namespace
     void KqueueEventSetupProc(void *clientData, int flags);
 
     /**
-     * @brief The appc_exec_interp_state struct Contains the necessary per-interpreter state.  Basically
+     * @brief The vessel_exec_interp_state struct Contains the necessary per-interpreter state.  Basically
      * all of the data that is needed at the global level but hang it off of an interp for good practice.
      */
-    struct appc_exec_interp_state
+    struct vessel_exec_interp_state
     {
         kqueue_state state;
         Tcl_Interp* interp;
         monitored_process_group_list mpgs;
-        appc::tclobj_ptr signal_callback;
+        vessel::tclobj_ptr signal_callback;
 
     private:
-        appc_exec_interp_state(Tcl_Interp* interp)
+        vessel_exec_interp_state(Tcl_Interp* interp)
             : state(kqueue()),
               interp(interp),
               mpgs(),
-              signal_callback(nullptr, appc::unref_tclobj)
+              signal_callback(nullptr, vessel::unref_tclobj)
         {
             if(state.kqueue_fd != -1)
             {
@@ -156,20 +156,20 @@ namespace
             }
         }
     public:
-        ~appc_exec_interp_state()
+        ~vessel_exec_interp_state()
         {
             /*Tcl ignores the case when the event source doesn't exist.*/
             Tcl_DeleteEventSource(KqueueEventSetupProc, KqueueEventCheckProc, this);
         }
 
         static int create(Tcl_Interp* interp,
-                          std::unique_ptr<appc_exec_interp_state>& interp_state)
+                          std::unique_ptr<vessel_exec_interp_state>& interp_state)
         {
             /*NOTE: Can't use make_unique with private constructor.*/
-            std::unique_ptr<appc_exec_interp_state> tmp_ptr(new appc_exec_interp_state(interp));
+            std::unique_ptr<vessel_exec_interp_state> tmp_ptr(new vessel_exec_interp_state(interp));
             if(tmp_ptr->state.kqueue_fd == -1)
             {
-                return appc::syserror_result(interp, "APPC EXEC KQUEUE");
+                return vessel::syserror_result(interp, "APPC EXEC KQUEUE");
             }
             interp_state = std::move(tmp_ptr);
             return TCL_OK;
@@ -178,7 +178,7 @@ namespace
         void set_signal_callback(Tcl_Obj* callback)
         {
             Tcl_IncrRefCount(callback);
-            signal_callback = appc::create_tclobj_ptr(callback);
+            signal_callback = vessel::create_tclobj_ptr(callback);
         }
     };
 
@@ -320,19 +320,19 @@ namespace
     /**
      * @brief The AppcExecSignalEvent class Encapsulates the event handling of signal events.
      */
-    class appc_exec_signal_event : public Tcl_Event
+    class vessel_exec_signal_event : public Tcl_Event
     {
         Tcl_Obj* m_eval_params;
         Tcl_Interp* m_interp;
 
         static int event_proc(Tcl_Event *evPtr, int flags)
         {
-            appc_exec_signal_event* _this = reinterpret_cast<appc_exec_signal_event*>(evPtr);
+            vessel_exec_signal_event* _this = reinterpret_cast<vessel_exec_signal_event*>(evPtr);
 
             int error = Tcl_EvalObjEx(_this->m_interp, _this->m_eval_params, TCL_EVAL_GLOBAL);
 
             /*Memory will be deleted by the tcl event loop.*/
-            _this->~appc_exec_signal_event();
+            _this->~vessel_exec_signal_event();
 
             if(error)
             {
@@ -342,7 +342,7 @@ namespace
             return 1; /*Handled event.  */
         }
 
-        appc_exec_signal_event(Tcl_Obj* eval_params, Tcl_Interp* interp)
+        vessel_exec_signal_event(Tcl_Obj* eval_params, Tcl_Interp* interp)
             : Tcl_Event(),
               m_eval_params(eval_params),
               m_interp(interp)
@@ -353,7 +353,7 @@ namespace
             Tcl_IncrRefCount(eval_params);
         }
 
-        ~appc_exec_signal_event()
+        ~vessel_exec_signal_event()
         {
             Tcl_DecrRefCount(m_eval_params);
         }
@@ -368,9 +368,9 @@ namespace
         static void enqueue_signal_event(Tcl_Interp* interp, Tcl_Obj* callback_eval_params)
         {
             /*New placement because tcl event queue frees the memory*/
-            appc_exec_signal_event* event_buffer = reinterpret_cast<appc_exec_signal_event*>(Tcl_Alloc(sizeof(appc_exec_signal_event)));
+            vessel_exec_signal_event* event_buffer = reinterpret_cast<vessel_exec_signal_event*>(Tcl_Alloc(sizeof(vessel_exec_signal_event)));
             assert(event_buffer);
-            new(event_buffer) appc_exec_signal_event(callback_eval_params, interp);
+            new(event_buffer) vessel_exec_signal_event(callback_eval_params, interp);
 
             Tcl_QueueEvent(event_buffer, TCL_QUEUE_TAIL);
         }
@@ -384,14 +384,14 @@ namespace
     void handle_kqueue_signal_event(struct kevent& event)
     {
         assert(event.udata);
-        appc_exec_interp_state* interp_state = reinterpret_cast<appc_exec_interp_state*>(event.udata);
+        vessel_exec_interp_state* interp_state = reinterpret_cast<vessel_exec_interp_state*>(event.udata);
         if(!interp_state->signal_callback)
         {
             return;
         }
 
         /*The list of mpg dicts that will be returned.*/
-        appc::tclobj_ptr top_level_list = appc::create_tclobj_ptr(Tcl_NewListObj(0, nullptr));
+        vessel::tclobj_ptr top_level_list = vessel::create_tclobj_ptr(Tcl_NewListObj(0, nullptr));
         for(auto mpg : interp_state->mpgs)
         {
             /*Each mpg is represented by a dict:
@@ -408,10 +408,10 @@ namespace
             }
 
             /*Add the value of the main pid.  Empty object if the main process has exited.*/
-            appc::tclobj_ptr main_pid_val = appc::create_tclobj_ptr(Tcl_NewObj());
+            vessel::tclobj_ptr main_pid_val = vessel::create_tclobj_ptr(Tcl_NewObj());
             if(!mpg->has_first_child_exited())
             {
-                main_pid_val = appc::create_tclobj_ptr(Tcl_NewWideIntObj(mpg->first_child_pid()));
+                main_pid_val = vessel::create_tclobj_ptr(Tcl_NewWideIntObj(mpg->first_child_pid()));
             }
             error = Tcl_DictObjPut(interp_state->interp, mpg_dict, Tcl_NewStringObj("main_pid", -1), main_pid_val.release());
             if(error)
@@ -453,7 +453,7 @@ namespace
             return;
         }
 
-        appc::tclobj_ptr eval_params = appc::create_tclobj_ptr(Tcl_NewListObj(callback_length, callback_elements));
+        vessel::tclobj_ptr eval_params = vessel::create_tclobj_ptr(Tcl_NewListObj(callback_length, callback_elements));
         error = Tcl_ListObjAppendElement(interp_state->interp, eval_params.get(), Tcl_NewStringObj(sys_signame[event.ident], -1));
         error = error || Tcl_ListObjAppendElement(interp_state->interp, eval_params.get(), top_level_list.release());
         if(error)
@@ -462,7 +462,7 @@ namespace
             return;
         }
 
-        appc_exec_signal_event::enqueue_signal_event(interp_state->interp, eval_params.release());
+        vessel_exec_signal_event::enqueue_signal_event(interp_state->interp, eval_params.release());
     }
 
     /**
@@ -539,16 +539,16 @@ namespace
 int Appc_ExecInit(Tcl_Interp* interp)
 {
     /*TODO: We should probably make our own kqueue module
-     * for appc::native extension
+     * for vessel::native extension
      */
-    std::unique_ptr<appc_exec_interp_state> interp_state;
-    int tcl_error = appc_exec_interp_state::create(interp, interp_state);
+    std::unique_ptr<vessel_exec_interp_state> interp_state;
+    int tcl_error = vessel_exec_interp_state::create(interp, interp_state);
     if(tcl_error) return tcl_error;
 
-    Tcl_SetAssocData(interp, "AppcExec", appc::cpp_delete_with_interp<appc_exec_interp_state>, interp_state.release());
+    Tcl_SetAssocData(interp, "AppcExec", vessel::cpp_delete_with_interp<vessel_exec_interp_state>, interp_state.release());
 
-    (void)Tcl_CreateObjCommand(interp, "appc::exec_set_signal_handler", Appc_Exec_SetSignalHandler, nullptr, nullptr);
-    (void)Tcl_CreateObjCommand(interp, "appc::exec", Appc_Exec, nullptr, nullptr);
+    (void)Tcl_CreateObjCommand(interp, "vessel::exec_set_signal_handler", Appc_Exec_SetSignalHandler, nullptr, nullptr);
+    (void)Tcl_CreateObjCommand(interp, "vessel::exec", Appc_Exec, nullptr, nullptr);
 
     return TCL_OK;
 }
@@ -575,7 +575,7 @@ int Appc_Exec_SetSignalHandler(void *clientData, Tcl_Interp *interp,
     }
 
 
-    appc_exec_interp_state* interp_state = reinterpret_cast<appc_exec_interp_state*>(Tcl_GetAssocData(interp, "AppcExec", nullptr));
+    vessel_exec_interp_state* interp_state = reinterpret_cast<vessel_exec_interp_state*>(Tcl_GetAssocData(interp, "AppcExec", nullptr));
 
     signal(SIGHUP, SIG_IGN);
 
@@ -588,7 +588,7 @@ int Appc_Exec_SetSignalHandler(void *clientData, Tcl_Interp *interp,
         int error = kevent(interp_state->state.kqueue_fd, &ev, 1, nullptr, 0, nullptr);
         if(error)
         {
-            return appc::syserror_result(interp, "KQUEUE", "SIGNAL");
+            return vessel::syserror_result(interp, "KQUEUE", "SIGNAL");
         }
     }
 
@@ -601,9 +601,9 @@ int Appc_Exec(void *clientData, Tcl_Interp *interp,
               int objc, struct Tcl_Obj *const *objv)
 {
     (void)objv;
-    appc_exec_interp_state* appc_exec = reinterpret_cast<appc_exec_interp_state*>(Tcl_GetAssocData(interp, "AppcExec", nullptr));
-    assert(appc_exec);
-    kqueue_state* state = &appc_exec->state;
+    vessel_exec_interp_state* vessel_exec = reinterpret_cast<vessel_exec_interp_state*>(Tcl_GetAssocData(interp, "AppcExec", nullptr));
+    assert(vessel_exec);
+    kqueue_state* state = &vessel_exec->state;
 
     if(objc < 4)
     {
@@ -636,14 +636,14 @@ int Appc_Exec(void *clientData, Tcl_Interp *interp,
         long handle = -1;
         if(std::string("stdin") == Tcl_GetString(key))
         {
-            tcl_error = appc::get_handle_from_channel(interp, value, handle);
+            tcl_error = vessel::get_handle_from_channel(interp, value, handle);
             if(tcl_error) return tcl_error;
             stdin_fd = (int)handle;
 
         }
         else if(std::string("stdout") == Tcl_GetString(key))
         {
-            tcl_error = appc::get_handle_from_channel(interp, value, handle);
+            tcl_error = vessel::get_handle_from_channel(interp, value, handle);
             if(tcl_error) return tcl_error;
 
             stdout_fd = (int)handle;
@@ -651,7 +651,7 @@ int Appc_Exec(void *clientData, Tcl_Interp *interp,
         else if(std::string("stderr") == Tcl_GetString(key))
         {
 
-            tcl_error = appc::get_handle_from_channel(interp, value, handle);
+            tcl_error = vessel::get_handle_from_channel(interp, value, handle);
             if(tcl_error) return tcl_error;
 
             stderr_fd = (int)handle;
@@ -760,7 +760,7 @@ int Appc_Exec(void *clientData, Tcl_Interp *interp,
         if(async)
         {
             std::shared_ptr<monitored_process_group> mpg = std::make_shared<monitored_process_group>(pid);
-            appc_exec->mpgs.push_back(mpg);
+            vessel_exec->mpgs.push_back(mpg);
 
             void* pge_buffer = Tcl_Alloc(sizeof(process_group_tcl_event));
             new(pge_buffer) process_group_tcl_event(interp, callback_prefix, mpg);
@@ -771,7 +771,7 @@ int Appc_Exec(void *clientData, Tcl_Interp *interp,
             int error = kevent(state->kqueue_fd, &event, 1, nullptr, 0, nullptr);
             if(error == -1)
             {
-                return appc::syserror_result(interp, "EXEC", "MONITOR", "KQUEUE");
+                return vessel::syserror_result(interp, "EXEC", "MONITOR", "KQUEUE");
             }
         }
         else

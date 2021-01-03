@@ -1,5 +1,5 @@
 #include "app_functions.h"
-#include "appc_tcl.h"
+#include "vessel_tcl.h"
 #include "cmdline.h"
 #include "container.h"
 #include "environment.h"
@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-using namespace appc;
+using namespace vessel;
 
 namespace {
 
@@ -78,9 +78,9 @@ int run_main(int argc, char** argv)
      * 3. Start the jail
      */
 
-    appc::funcs::auto_unmount_ptr mountpoint = appc::funcs::mount_container_image(*cmdline, env);
+    vessel::funcs::auto_unmount_ptr mountpoint = vessel::funcs::mount_container_image(*cmdline, env);
 
-    appc::jail the_jail(mountpoint->target(), cmdline->container);
+    vessel::jail the_jail(mountpoint->target(), cmdline->container);
     std::tuple<pid_t, int> child_ids = the_jail.fork_exec_jail(cmdline->container_cmd_args);
 
     pid_t child_pid = std::get<0>(child_ids);

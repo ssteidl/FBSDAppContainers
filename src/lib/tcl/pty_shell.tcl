@@ -2,9 +2,9 @@
 #and passing through stdin/stdout to the current
 #controlling terminal
 
-package require appc::native
+package require vessel::native
 
-namespace eval appc::pty_shell {
+namespace eval vessel::pty_shell {
 
     proc run {master done_script_prefix} {
 
@@ -50,4 +50,4 @@ namespace eval appc::pty_shell {
     }
 }
 
-package provide appc::pty_shell 1.0.0
+package provide vessel::pty_shell 1.0.0

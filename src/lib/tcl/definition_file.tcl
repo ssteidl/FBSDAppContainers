@@ -45,7 +45,7 @@ oo::class create definition_file {
     }
 }
 
-package provide appc::definition_file 1.0.0
+package provide vessel::definition_file 1.0.0
 # definition_file create o
 # o add_whiteout_path {/yippity/doo/dah}
 # o add_whiteout_path {/yippity/doo/dac}

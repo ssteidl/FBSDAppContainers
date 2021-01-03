@@ -1,16 +1,16 @@
 package require debug
-package require appc::env
-package require appc::metadata_db
-package require appc::native
+package require vessel::env
+package require vessel::metadata_db
+package require vessel::native
 package require defer
 package require fileutil
 package require json
 package require uri
 package require TclOO
 
-namespace eval appc::import {
-    #appc::import is responsible for unpacking and "importing"
-    #appc images into the zfs pool
+namespace eval vessel::import {
+    #vessel::import is responsible for unpacking and "importing"
+    #vessel images into the zfs pool
 
     debug define import
     debug on import 1 stderr
@@ -41,59 +41,59 @@ namespace eval appc::import {
 	    set parent_image_components [split $parent_image :]
 	    set parent_image_name [lindex $parent_image_components 0]
 	    set parent_image_version [lindex $parent_image_components 1]
-	    set parent_image_snapshot [appc::env::get_dataset_from_image_name $parent_image_name $parent_image_version]
+	    set parent_image_snapshot [vessel::env::get_dataset_from_image_name $parent_image_name $parent_image_version]
 	    set parent_image_snapshot "${parent_image_snapshot}@${parent_image_version}"
 	    
 	    #TODO: fetch the parent image if it doesn't exist.  We can
-	    #move the fetch_image command from the appc_file_commands
-	    if {![appc::zfs::snapshot_exists $parent_image_snapshot]} {
+	    #move the fetch_image command from the vessel_file_commands
+	    if {![vessel::zfs::snapshot_exists $parent_image_snapshot]} {
 		return -code error -errorcode {NYI} \
 		    "Pulling parent image is not yet implemented: '$parent_image_snapshot'"
 	    }
 
 	    #Clone parent filesystem
-	    set new_dataset [appc::env::get_dataset_from_image_name $image $tag]
-	    if {![appc::zfs::dataset_exists $new_dataset]} {
+	    set new_dataset [vessel::env::get_dataset_from_image_name $image $tag]
+	    if {![vessel::zfs::dataset_exists $new_dataset]} {
 		debug.import "Cloning parent image snapshot: '$parent_image_snapshot' to '$new_dataset'"
-		appc::zfs::clone_snapshot $parent_image_snapshot $new_dataset
+		vessel::zfs::clone_snapshot $parent_image_snapshot $new_dataset
 	    }
 
-	    if {![appc::zfs::snapshot_exists ${new_dataset}@a]} {
-		appc::zfs::create_snapshot ${new_dataset} a
+	    if {![vessel::zfs::snapshot_exists ${new_dataset}@a]} {
+		vessel::zfs::create_snapshot ${new_dataset} a
 	    }
 	    
 	    #Now clone the new dataset into a version dataset.  This means
 	    #that the 'new_dataset' will always be the same as its parent
 	    #dataset.  We have to do this because we can't have a dataset
-	    #without a parent.  So for example, the appcdevel image (named
-	    #devel) can't have a dataset called <appc_pool>/jails/devel/0
-	    #without first having <appc_pool>/jails/devel
+	    #without a parent.  So for example, the vesseldevel image (named
+	    #devel) can't have a dataset called <vessel_pool>/jails/devel/0
+	    #without first having <vessel_pool>/jails/devel
 	    #NOTE: I think all of this can be deleted.
-	    # set versioned_new_dataset [appc::env::get_dataset_from_image_name $image_name $version]
-	    # if {![appc::zfs::dataset_exists $versioned_new_dataset]} {
-	    # 	appc::zfs::clone_snapshot ${new_dataset}@a $versioned_new_dataset
+	    # set versioned_new_dataset [vessel::env::get_dataset_from_image_name $image_name $version]
+	    # if {![vessel::zfs::dataset_exists $versioned_new_dataset]} {
+	    # 	vessel::zfs::clone_snapshot ${new_dataset}@a $versioned_new_dataset
 	    # }
 
-	    # if {![appc::zfs::snapshot_exists ${versioned_new_dataset}@a]} {
-	    # 	appc::zfs::create_snapshot $versioned_new_dataset a
+	    # if {![vessel::zfs::snapshot_exists ${versioned_new_dataset}@a]} {
+	    # 	vessel::zfs::create_snapshot $versioned_new_dataset a
 	    # }
 	    
 	    #Untar layer on top of parent file system
-	    set mountpoint [appc::zfs::get_mountpoint $new_dataset]
+	    set mountpoint [vessel::zfs::get_mountpoint $new_dataset]
 	    exec tar -C $mountpoint -xvf $layer_file >&@ $status_channel
 	    flush $status_channel
 
 	    #TODO: delete files from whitelist
-	    if {[appc::zfs::snapshot_exists ${new_dataset}@b]} {
+	    if {[vessel::zfs::snapshot_exists ${new_dataset}@b]} {
 		#If the b snapshot already exists then we need to delete it and
 		#make a new one.
-		appc::zfs::destroy ${new_dataset}@b
+		vessel::zfs::destroy ${new_dataset}@b
 	    }
-	    appc::zfs::create_snapshot $new_dataset b
+	    vessel::zfs::create_snapshot $new_dataset b
 
 	    #Very last thing is importing the image metadata.  We import
 	    #instead of copying the file to safeguard against mismatching versions
-	    appc::import::import_image_metadata_dict $metadata_dict
+	    vessel::import::import_image_metadata_dict $metadata_dict
 	}
     }
 
@@ -101,7 +101,7 @@ namespace eval appc::import {
 	#Used when the image already exists (maybe it was built) and
 	# we just need to store the metadata.
 
-        appc::metadata_db::write_metadata_file $name $tag $cwd $cmd $parent_images
+        vessel::metadata_db::write_metadata_file $name $tag $cwd $cmd $parent_images
     }
 
     proc import_image_metadata_dict {metadata_dict} {
@@ -115,7 +115,7 @@ namespace eval appc::import {
     }
     
     proc import {image tag image_dir status_channel} {
-	# Import an image into the appc environment.
+	# Import an image into the vessel environment.
 	#
 	# params:
 	#
@@ -133,4 +133,4 @@ namespace eval appc::import {
     }
 }
 
-package provide appc::import 1.0.0
+package provide vessel::import 1.0.0

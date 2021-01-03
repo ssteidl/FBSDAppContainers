@@ -5,7 +5,7 @@
 #include <list>
 #include <vector>
 
-namespace appc
+namespace vessel
 {
 
 struct commandline

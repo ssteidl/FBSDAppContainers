@@ -8,14 +8,14 @@
 /*
  * The app functions are building blocks for
  * the different applications and utilities.
- * appc will use all of them and the utilities
+ * vessel will use all of them and the utilities
  * will generally use some subset.
  *
- * For example, appc_mount will use
+ * For example, vessel_mount will use
  * mount_container_image().
  */
-namespace appc { namespace funcs {
-    void auto_unmount(appc::mountpoint* mnt);
+namespace vessel { namespace funcs {
+    void auto_unmount(vessel::mountpoint* mnt);
     using auto_unmount_ptr = std::unique_ptr<mountpoint, decltype(&auto_unmount)>;
 
     auto_unmount_ptr mount_container_image(commandline& cmdline, environment& env);

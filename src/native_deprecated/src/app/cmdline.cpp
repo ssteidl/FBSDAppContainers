@@ -2,7 +2,7 @@
 #include <getopt.h>
 #include <iostream>
 
-using namespace appc;
+using namespace vessel;
 
 namespace
 {
@@ -19,12 +19,12 @@ namespace
 void commandline::usage()
 {
     /*TODO: implement commands instead of just flags
-     * for example: appc run OR appc save
+     * for example: vessel run OR vessel save
      */
     std::cerr << "USAGE: " << std::endl
-              << "appc --name=<container-name> --image=<image-name>" << std::endl
+              << "vessel --name=<container-name> --image=<image-name>" << std::endl
               << "OR" << std::endl
-              << "appc --save --type=<ufs|tgz>" << std::endl
+              << "vessel --save --type=<ufs|tgz>" << std::endl
               << std::endl;
 }
 

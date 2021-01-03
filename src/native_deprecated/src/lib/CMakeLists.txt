@@ -1,7 +1,7 @@
-add_library(appc-priv STATIC
-  appc_tcl.cpp
+add_library(vessel-priv STATIC
+  vessel_tcl.cpp
   container.cpp
   fs.cpp
   image_archive.cpp
   mountpoint.cpp)
-target_link_libraries(appc-priv ${TCL_LIBRARY})
+target_link_libraries(vessel-priv ${TCL_LIBRARY})

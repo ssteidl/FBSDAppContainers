@@ -1,7 +1,7 @@
 # -*- mode: tcl; indent-tabs-mode: nil; tab-width: 4; -*-
 package require uri
 
-namespace eval appc::env {
+namespace eval vessel::env {
 
     proc get_from_env {key {_default {}}} {
 
@@ -31,7 +31,7 @@ namespace eval appc::env {
     
     proc get_workdir {} {
         return [get_from_env APPC_WORKDIR \
-                    [file join [get_from_env HOME [pwd]] .appc-workdir]]
+                    [file join [get_from_env HOME [pwd]] .vessel-workdir]]
     }
     
     proc get_repo_url {} {
@@ -59,7 +59,7 @@ namespace eval appc::env {
     proc remove_resolv_conf {mountpoint} {
         set resolve_file {/etc/resolv.conf}
         #TODO: Commented this out because it was getting deleted multiple times
-        #due to multiple run commands.  Need to fix the appc_file_command
+        #due to multiple run commands.  Need to fix the vessel_file_command
         #file delete $resolve_file [fileutil::jail $mountpoint $resolve_file]
     }
 
@@ -79,4 +79,4 @@ namespace eval appc::env {
         return [get_from_env APPC_METADATA_DB_DIR [file join $workdir {db}]]
     }
 }
-package provide appc::env 1.0.0
+package provide vessel::env 1.0.0

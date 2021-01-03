@@ -1,26 +1,26 @@
 #!/usr/bin/env tclsh8.6
 # -*- mode: tcl; indent-tabs-mode: nil; tab-width: 4; -*-
 
-package require appc::build
-package require appc::env
-package require appc::export
-package require appc::native
-package require appc::import
-package require appc::metadata_db
-package require appc::repo
-package require appc::run
-package require appc::zfs
+package require vessel::build
+package require vessel::env
+package require vessel::export
+package require vessel::native
+package require vessel::import
+package require vessel::metadata_db
+package require vessel::repo
+package require vessel::run
+package require vessel::zfs
 
 package require debug
 package require defer
 
 package require fileutil
 
-debug define appc
-debug on appc 1 stderr
+debug define vessel
+debug on vessel 1 stderr
 
-set options [appc::parse_options $argv]
-debug.appc "Options: $options"
+set options [vessel::parse_options $argv]
+debug.vessel "Options: $options"
 
 set command [dict get $options command]
 set args [dict get $options args]
@@ -30,10 +30,10 @@ if {[dict exists $args help]} {
     exit 0
 }
 
-set pool [appc::env::get_pool]
-if {![appc::zfs::is_mounted $pool]} {
+set pool [vessel::env::get_pool]
+if {![vessel::zfs::is_mounted $pool]} {
     puts stderr "ZFS pool '$pool' is not mounted.  Attempting to mount now"
-    if {[catch {appc::zfs::mount $pool} msg]} {
+    if {[catch {vessel::zfs::mount $pool} msg]} {
         puts stderr "Failed to mount pool: ${msg}.  Moving on..."
     }
 }
@@ -145,27 +145,27 @@ proc signal_handler {signal active_pid_groups} {
             puts stderr "Handling SIG${signal} for background process"
             switch -exact $signal {
                 INT {
-                    appc::jail::remove $jail stderr
+                    vessel::jail::remove $jail stderr
                 }
                 TERM {
-                    catch {appc::jail::shutdown $jail stderr}
+                    catch {vessel::jail::shutdown $jail stderr}
                     after 2000 [list exec -ignorestderr jail -r $jail >&@ stderr]
                 }
                 default {
-                    appc::jail::kill $jail "-${signal}" stderr
+                    vessel::jail::kill $jail "-${signal}" stderr
                 }
             }
         }
     }
 }
 
-appc::exec_set_signal_handler [list signal_handler]
+vessel::exec_set_signal_handler [list signal_handler]
 
-#TODO: This belongs in the 'appc init' command whenever
+#TODO: This belongs in the 'vessel init' command whenever
 # we decide to implement that..
 proc create_workdir {} {
 
-    set workdir [appc::env::get_workdir]
+    set workdir [vessel::env::get_workdir]
     if {![file exists $workdir]} {
         file mkdir $workdir
         file mkdir [file join $workdir local_repo]
@@ -193,7 +193,7 @@ proc run_container_coro {options} {
     }
 
     #Setup and yieldto the run coroutine.  It will callback this coroutine after exiting
-    coroutine runcoro appc::run::run_command $chan_dict [dict get $options args] \
+    coroutine runcoro vessel::run::run_command $chan_dict [dict get $options args] \
         [info coroutine]
     yieldto runcoro
     set run_done_flag [expr true]
@@ -201,7 +201,7 @@ proc run_container_coro {options} {
 
 proc handle_repo_cmd {cmd args_dict} {
 
-    debug.appc "repo args: $args_dict"
+    debug.vessel "repo args: $args_dict"
     set image [dict get $args_dict image]
 
     set tag [dict get $args_dict tag]
@@ -209,12 +209,12 @@ proc handle_repo_cmd {cmd args_dict} {
         set tag {latest}
     }
 
-    set repo [appc::repo::repo_factory [appc::env::get_repo_url]]
+    set repo [vessel::repo::repo_factory [vessel::env::get_repo_url]]
     defer::with [list repo] {
         $repo destroy
     }
 
-    set downloaddir [appc::env::image_download_dir]
+    set downloaddir [vessel::env::image_download_dir]
     
     switch -exact $cmd {
 
@@ -222,8 +222,8 @@ proc handle_repo_cmd {cmd args_dict} {
             #NOTE: We may want to make export directories something separate
             #from download directories.  For now, we'll keep it separate.
             #
-            #appc publish --tag=local kafka
-            set image_file [appc::export::export_image $image $tag $downloaddir]
+            #vessel publish --tag=local kafka
+            set image_file [vessel::export::export_image $image $tag $downloaddir]
             if {![$repo image_exists $image $tag]} {
                 $repo put_image $image_file
             }
@@ -231,7 +231,7 @@ proc handle_repo_cmd {cmd args_dict} {
         pull {
             #Pulls the command.  Basically a GET and an import.
             $repo pull_image $image $tag $downloaddir
-            appc::import::import $image $tag $downloaddir stderr
+            vessel::import::import $image $tag $downloaddir stderr
         }
     }
 }
@@ -243,7 +243,7 @@ switch -regexp -matchvar parsed_cmd $command {
     build {
         #Building creates the image as a tagged dataset.
         #TODO: currently it doesn't tag the dataset
-        appc::build::build_command $args stderr
+        vessel::build::build_command $args stderr
     }
     run {
         #Create a new container from a tagged dataset.
@@ -253,14 +253,14 @@ switch -regexp -matchvar parsed_cmd $command {
         vwait run_done_flag
     }
     publish|pull {
-        debug.appc "push pull args: $args"
+        debug.vessel "push pull args: $args"
         handle_repo_cmd $parsed_cmd $args
     }
     image {
-        appc::metadata_db::image_command $args
+        vessel::metadata_db::image_command $args
     }
     export {
-        appc::export::export_command $args
+        vessel::export::export_command $args
     }
     default {
         puts stderr "Unknown command: $command"

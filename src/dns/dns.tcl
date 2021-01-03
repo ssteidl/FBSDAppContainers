@@ -3,9 +3,9 @@
 
 package require TclOO
 package require dicttool
-package require appc::native
+package require vessel::native
 
-namespace eval appc::dns {
+namespace eval vessel::dns {
 
     namespace export create_server
     namespace ensemble create
@@ -39,7 +39,7 @@ namespace eval appc::dns {
 
             method read {handle buffer} {
 
-                set query [appc::dns::parse_query $buffer]
+                set query [vessel::dns::parse_query $buffer]
                 return $query
             }
 
@@ -56,7 +56,7 @@ namespace eval appc::dns {
                 set ttl [dict get $buffer ttl]
                 set raw_query [dict get $buffer raw_query]
                 # buffer should be an ipv4 address string or an empty string
-                set response [appc::dns::generate_A_response $addr $ttl $raw_query]
+                set response [vessel::dns::generate_A_response $addr $ttl $raw_query]
                 return $response
             }
 
@@ -76,11 +76,11 @@ namespace eval appc::dns {
 
                 #Add support for listening on a specific ip
                 #address
-                set udp_channel [appc::udp_open -myaddr $ip $port]
+                set udp_channel [vessel::udp_open -myaddr $ip $port]
                 fconfigure $udp_channel -translation binary -buffering none -blocking false
 
                 #TODO: Proper way to delete this
-                set dns_transform [appc::dns::_::transform new]
+                set dns_transform [vessel::dns::_::transform new]
                 set message_channel [chan push $udp_channel $dns_transform]
                 fileevent $udp_channel readable [list [self] pkt_ready]
 
@@ -136,4 +136,4 @@ namespace eval appc::dns {
     }
 }
 
-package provide appc::dns 1.0.0
+package provide vessel::dns 1.0.0

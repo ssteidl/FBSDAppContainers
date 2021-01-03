@@ -1,5 +1,5 @@
-package require appc::env
-package require appc::zfs
+package require vessel::env
+package require vessel::zfs
 package require defer
 package require fileutil
 package require json
@@ -12,7 +12,7 @@ package require struct::matrix
 # that can be easily transformed into jail files.
 
 
-namespace eval appc::metadata_db {
+namespace eval vessel::metadata_db {
     #The matadata_db module is an interface to get all metadata from
     #images and containers.  The actual store for the metadata varies.
     #We try to not duplicate data.  For instance, if metadata can be found
@@ -67,11 +67,11 @@ namespace eval appc::metadata_db {
 
 	    # params:
 	    #
-	    # dataset: The complete name of the dataset.  zroot/appc-test/FreeBSD:12.1
+	    # dataset: The complete name of the dataset.  zroot/vessel-test/FreeBSD:12.1
 	    
 	    set components [split $dataset /]
 	    set child_name [lrange $components end end]
-	    set filename [file join [appc::env::metadata_db_dir] "${child_name}.json"]
+	    set filename [file join [vessel::env::metadata_db_dir] "${child_name}.json"]
 
 	    set json [fileutil::cat $filename]
 
@@ -84,9 +84,9 @@ namespace eval appc::metadata_db {
 	    #Output script consumable fields for each image to output_chan.
 	    
 	    set headers [list ID PARENT COMMAND]
-	    set appc_dataset [appc::env::get_dataset]
+	    set vessel_dataset [vessel::env::get_dataset]
 
-	    set dataset_list [appc::zfs::dataset_children $appc_dataset]
+	    set dataset_list [vessel::zfs::dataset_children $vessel_dataset]
 
 	    #We don't care about the parent dataset
 	    set children_list [lrange $dataset_list 1 end]
@@ -137,7 +137,7 @@ namespace eval appc::metadata_db {
     }
 
     proc metadata_file_path {image_name tag} {
-	set metadata_dir [appc::env::metadata_db_dir]
+	set metadata_dir [vessel::env::metadata_db_dir]
 	set metadata_file [file join $metadata_dir "${image_name}:${tag}.json"]
 	return $metadata_file
     }
@@ -184,4 +184,4 @@ namespace eval appc::metadata_db {
     }
 }
 
-package provide appc::metadata_db 1.0.0
+package provide vessel::metadata_db 1.0.0

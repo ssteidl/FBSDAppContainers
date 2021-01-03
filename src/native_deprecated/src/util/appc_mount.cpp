@@ -1,5 +1,5 @@
 #include "app_functions.h"
-#include "appc_tcl.h"
+#include "vessel_tcl.h"
 #include "cmdline.h"
 #include "environment.h"
 #include <iostream>
@@ -7,8 +7,8 @@
 #include "mountpoint.h"
 #include <unistd.h>
 
-using namespace appc;
-using namespace appc::funcs;
+using namespace vessel;
+using namespace vessel::funcs;
 
 int run_main(int argc, char** argv)
 {
@@ -32,7 +32,7 @@ int main(int argc, char** argv)
 
     /*
      * Arguments:
-     * --image: Name of the image.  appc_mount will look in APPC_IMAGE_DIR
+     * --image: Name of the image.  vessel_mount will look in APPC_IMAGE_DIR
      * to find the image, then nullfs mount the image to --name folder
      * in APPC_CONTAINER_DIR.
      */

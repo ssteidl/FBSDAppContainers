@@ -3,7 +3,7 @@
 
 #include "fs.h"
 
-namespace appc
+namespace vessel
 {
     class environment
     {

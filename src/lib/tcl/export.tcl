@@ -1,10 +1,10 @@
-package require appc::env
-package require appc::metadata_db
-package require appc::zfs
+package require vessel::env
+package require vessel::metadata_db
+package require vessel::zfs
 package require debug
 package require uuid
 
-namespace eval appc::export {
+namespace eval vessel::export {
 
     debug define export
     debug on run 1 stderr
@@ -17,10 +17,10 @@ namespace eval appc::export {
 	    # dataset filesystem.  A layer is a zip archive of
 	    # the differences in the snapshots.
 
-            set mountpoint [appc::zfs::get_mountpoint $dataset]
-            set diff_dict [appc::zfs::diff ${dataset}@a ${dataset}]
+            set mountpoint [vessel::zfs::get_mountpoint $dataset]
+            set diff_dict [vessel::zfs::diff ${dataset}@a ${dataset}]
 
-            set workdir [appc::env::get_workdir]
+            set workdir [vessel::env::get_workdir]
             set build_dir [file join $workdir $guid]
             
             file mkdir $build_dir
@@ -34,7 +34,7 @@ namespace eval appc::export {
                 }
             }
 
-	    set modified_links_dict [appc::zfs::diff_hardlinks $diff_dict $mountpoint]
+	    set modified_links_dict [vessel::zfs::diff_hardlinks $diff_dict $mountpoint]
             
             set tar_list_file [open {files.txt} {w}]
 
@@ -72,13 +72,13 @@ namespace eval appc::export {
 		return $output_image_path
 	    }
 	    #Create the image layer.
-	    set dataset [appc::env::get_dataset_from_image_name $image_name $image_tag]
+	    set dataset [vessel::env::get_dataset_from_image_name $image_name $image_tag]
 	    set guid [uuid::uuid generate]
 	    set image_dir [create_layer $dataset $guid $status_channel]
 
-	    set metadata_file [appc::metadata_db::metadata_file_path $image_name $image_tag]
+	    set metadata_file [vessel::metadata_db::metadata_file_path $image_name $image_tag]
 	    file copy $metadata_file $image_dir
-            set workdir [appc::env::get_workdir]
+            set workdir [vessel::env::get_workdir]
 
             #Ensure we cd back to the initial directory. Should probably just
             # use tcllib::defer
@@ -117,4 +117,4 @@ namespace eval appc::export {
     }
 }
 
-package provide appc::export 1.0.0
+package provide vessel::export 1.0.0

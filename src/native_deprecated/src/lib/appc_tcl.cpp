@@ -1,8 +1,8 @@
 #include <cassert>
-#include "appc_tcl.h"
+#include "vessel_tcl.h"
 #include <iostream>
 
-using namespace appc;
+using namespace vessel;
 
 tcl_obj_raii::tcl_obj_raii(Tcl_Obj* obj)
     : obj(obj)
@@ -60,13 +60,13 @@ tcl_obj_raii::~tcl_obj_raii()
     std::cerr << std::endl;
 }
 
-void appc::delete_interp(Tcl_Interp* interp)
+void vessel::delete_interp(Tcl_Interp* interp)
 {
     assert(interp);
     Tcl_DeleteInterp(interp);
 }
 
-interp_ptr appc::create_tcl_interp()
+interp_ptr vessel::create_tcl_interp()
 {
-    return appc::interp_ptr(Tcl_CreateInterp(), appc::delete_interp);
+    return vessel::interp_ptr(Tcl_CreateInterp(), vessel::delete_interp);
 }

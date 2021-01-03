@@ -8,7 +8,7 @@
 #include <sys/uio.h>
 #include <vector>
 
-using namespace appc;
+using namespace vessel;
 
 namespace
 {
@@ -113,7 +113,7 @@ namespace
 mountpoint::~mountpoint()
 {}
 
-std::unique_ptr<mountpoint> appc::create_nullfs_mount(fs_path from,
+std::unique_ptr<mountpoint> vessel::create_nullfs_mount(fs_path from,
                                                       fs_path target,
                                                       int flags)
 {

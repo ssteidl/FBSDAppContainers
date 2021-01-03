@@ -2,9 +2,9 @@
 #include <sstream>
 #include <unistd.h>
 
-using namespace appc;
+using namespace vessel;
 
-appc::jail::jail(fs_path path, const std::string& hostname)
+vessel::jail::jail(fs_path path, const std::string& hostname)
     : m_jail()
 {
     if(!path || !path.is_dir())
@@ -27,7 +27,7 @@ appc::jail::jail(fs_path path, const std::string& hostname)
 }
 
 
-//pid_t appc::jail::fork_jail()
+//pid_t vessel::jail::fork_jail()
 //{
 //    pid_t child_id = fork();
 
@@ -46,7 +46,7 @@ appc::jail::jail(fs_path path, const std::string& hostname)
 //    }
 //}
 
-std::tuple<pid_t, int> appc::jail::fork_exec_jail(const std::vector<char*>& args)
+std::tuple<pid_t, int> vessel::jail::fork_exec_jail(const std::vector<char*>& args)
 {
     if(args.back() != nullptr)
     {
@@ -90,7 +90,7 @@ std::tuple<pid_t, int> appc::jail::fork_exec_jail(const std::vector<char*>& args
     }
 }
 
-appc::jail::~jail()
+vessel::jail::~jail()
 {
     if(m_jail.hostname) free(m_jail.hostname);
     if(m_jail.path) free(m_jail.path);

@@ -246,7 +246,7 @@ int Appc_ParseURL(void *clientData, Tcl_Interp *interp,
         return TCL_ERROR;
     }
 
-    appc::tclobj_ptr url_dict = appc::create_tclobj_ptr(Tcl_NewDictObj());
+    vessel::tclobj_ptr url_dict = vessel::create_tclobj_ptr(Tcl_NewDictObj());
     int tcl_err = Tcl_DictObjPut(interp, url_dict.get(),
                                  Tcl_NewStringObj("scheme", -1),
                                  Tcl_NewStringObj(u->scheme().c_str(), -1));

@@ -2,7 +2,7 @@
 
 #include "fs.h"
 
-using namespace appc;
+using namespace vessel;
 int main(int argc, char** argv)
 {
     Tcl_FindExecutable(argv[0]);

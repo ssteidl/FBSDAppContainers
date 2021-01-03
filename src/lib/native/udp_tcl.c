@@ -140,11 +140,11 @@ Udp_Init(Tcl_Interp *interp)
     Tcl_InitStubs(interp, "8.1", 0);
 #endif
 
-    Tcl_CreateObjCommand(interp, "appc::udp_open", udpOpen ,
+    Tcl_CreateObjCommand(interp, "vessel::udp_open", udpOpen ,
                       (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-    Tcl_CreateCommand(interp, "appc::udp_conf", udpConf ,
+    Tcl_CreateCommand(interp, "vessel::udp_conf", udpConf ,
                       (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-    Tcl_CreateCommand(interp, "appc::udp_peek", udpPeek ,
+    Tcl_CreateCommand(interp, "vessel::udp_peek", udpPeek ,
                       (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 
     return r;

@@ -5,8 +5,8 @@ source [file join .. zfs.tcl]
 package require fileutil
 
 set pool "zpool"
-if {[info exists env(APPC_POOL)]} {
-    set pool $env(APPC_POOL)
+if {[info exists env(VESSEL_POOL)]} {
+    set pool $env(VESSEL_POOL)
 }
 
 set container "${pool}/jails/minimaltest"

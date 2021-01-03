@@ -7,8 +7,8 @@ find_package(TCL)
 find_package(CURL)
 include_directories(${TCL_INCLUDE_PATH} ${CURL_INCLUDE_DIRS})
 
-add_library(appctcl SHARED
-    src/lib/native/appc_native.cpp
+add_library(vesseltcl SHARED
+    src/lib/native/vessel_native.cpp
     src/dns/embdns.cpp
     src/lib/native/tcl_util.cpp
     src/lib/native/url_cmd.cpp
@@ -16,15 +16,15 @@ add_library(appctcl SHARED
     src/lib/native/exec.cpp
     src/lib/native/udp_tcl.c)
 
-target_link_libraries(appctcl ${CURL_LIBRARIES})
+target_link_libraries(vesseltcl ${CURL_LIBRARIES})
 
 add_executable(url_test util/native/url_test.cpp)
 target_link_libraries(url_test ${CURL_LIBRARIES})
 
-install(TARGETS appctcl
+install(TARGETS vesseltcl
         LIBRARY
-        DESTINATION lib/tclappc)
-install(FILES src/lib/tcl/appc_file_commands.tcl
+        DESTINATION lib/vesselappc)
+install(FILES src/lib/tcl/vessel_file_commands.tcl
               src/lib/tcl/bsd.tcl
               src/lib/tcl/build.tcl
               src/lib/tcl/definition_file.tcl
@@ -38,10 +38,10 @@ install(FILES src/lib/tcl/appc_file_commands.tcl
               src/lib/tcl/repos.tcl
               src/lib/tcl/run.tcl
               src/lib/tcl/zfs.tcl
-        DESTINATION lib/tclappc)
+        DESTINATION lib/vesselappc)
 
 install(DIRECTORY src/network
-        DESTINATION lib/tclappc
+        DESTINATION lib/tclvessel
         PATTERN *.md EXCLUDE)
 
-install(PROGRAMS src/apps/appc DESTINATION bin)
+install(PROGRAMS src/apps/vessel DESTINATION bin)

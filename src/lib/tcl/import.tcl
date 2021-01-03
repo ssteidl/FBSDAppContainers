@@ -23,7 +23,7 @@ namespace eval vessel::import {
 	    # use what should be the only thing there
 	    set layer_file_glob [glob "${extracted_path}/*-layer.tgz"]
 	    if {[llength $layer_file_glob] != 1} {
-		return -code error -errorcode {APPC IMPORT LAYER} \
+		return -code error -errorcode {VESSEL IMPORT LAYER} \
 		    "Unexpected number of layer files in image: $layer_file_glob"
 	    }
 	    set layer_file [lindex $layer_file_glob 0]

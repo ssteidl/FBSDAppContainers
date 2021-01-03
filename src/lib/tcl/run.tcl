@@ -98,7 +98,7 @@ namespace eval vessel::run {
 
         if {![dict exists $mountpoints_dict $image_dataset]} {
             #TODO: retrieve and unpack layer
-            return -code error -errorcode {APPC RUN NYI} \
+            return -code error -errorcode {VESSEL RUN NYI} \
                 "Automatically pulling images is NYI"
         }
 
@@ -144,7 +144,7 @@ namespace eval vessel::run {
             vessel::jail::run_jail $jail_name $mountpoint $volume_datasets $chan_dict $network $coro_name {*}$command
         } error_msg info_dict]
         if {$error} {
-            return -code error -errorcode {APPC JAIL EXEC} "Error running jail: $error_msg"
+            return -code error -errorcode {VESSEL JAIL EXEC} "Error running jail: $error_msg"
         }
         
         #Wait for the command to finish

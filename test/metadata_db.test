@@ -24,8 +24,8 @@ namespace eval metadata_db::test {
     namespace import ::tcltest::*
     
     #Use a specific dataset for testing
-    set env(APPC_DATASET) appc-test
-    #set env(APPC_METADATA_DB_DIR) {/tmp/appc-test/metadata_db}
+    set env(VESSEL_DATASET) appc-test
+    #set env(VESSEL_METADATA_DB_DIR) {/tmp/appc-test/metadata_db}
     proc clean_dataset {} {
 
 	set appc_dataset [appc::env::get_dataset]

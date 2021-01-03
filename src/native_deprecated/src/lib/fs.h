@@ -1,5 +1,5 @@
-#ifndef APPC_FS_H
-#define APPC_FS_H
+#ifndef VESSEL_FS_H
+#define VESSEL_FS_H
 
 #include "vessel_tcl.h"
 #include <list>
@@ -95,4 +95,4 @@ public:
 void validate_directory(const fs_path& path);
 
 }
-#endif // APPC_FS_H
+#endif // VESSEL_FS_H

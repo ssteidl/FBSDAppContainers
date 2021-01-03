@@ -32,9 +32,9 @@ int main(int argc, char** argv)
 
     /*
      * Arguments:
-     * --image: Name of the image.  vessel_mount will look in APPC_IMAGE_DIR
+     * --image: Name of the image.  vessel_mount will look in VESSEL_IMAGE_DIR
      * to find the image, then nullfs mount the image to --name folder
-     * in APPC_CONTAINER_DIR.
+     * in VESSEL_CONTAINER_DIR.
      */
 
     int exit_code = 1;

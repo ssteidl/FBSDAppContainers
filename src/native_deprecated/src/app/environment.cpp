@@ -31,9 +31,9 @@ namespace
 }
 
 environment::environment()
-    : m_archive_dir(get_env_required_dir("APPC_ARCHIVE_DIR")),
-      m_image_dir(get_env_required_dir("APPC_IMAGE_DIR")),
-      m_container_dir(get_env_required_dir("APPC_CONTAINER_DIR"))
+    : m_archive_dir(get_env_required_dir("VESSEL_ARCHIVE_DIR")),
+      m_image_dir(get_env_required_dir("VESSEL_IMAGE_DIR")),
+      m_container_dir(get_env_required_dir("VESSEL_CONTAINER_DIR"))
 {}
 
 fs_path environment::find_image(const std::string& image_name) const

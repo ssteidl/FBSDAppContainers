@@ -5,11 +5,11 @@ package require tcltest
 
 namespace import tcltest::*
 
-testConstraint aws $env(APPC_TEST_AWS)
+testConstraint aws $env(VESSEL_TEST_AWS)
 
 test s3cmd-init-1 {Test s3cmd --configure is called when needed} -constraint aws -setup {
-    set ::env(APPC_REPO_URL) s3://appc-test-1
-    set ::env(APPC_S3CMD_CONFIG) [file join / tmp appc_s3cmd_config_test]
+    set ::env(VESSEL_REPO_URL) s3://appc-test-1
+    set ::env(VESSEL_S3CMD_CONFIG) [file join / tmp appc_s3cmd_config_test]
 } -body {
 
     set s3_config_file appc::env::s3cmd_config_file
@@ -24,12 +24,12 @@ test s3cmd-init-1 {Test s3cmd --configure is called when needed} -constraint aws
     close $appc_chan
     return $output
 } -cleanup {
-    set ::env(APPC_REPO_URL) {}
-    set ::env(APPC_S3CMD_CONFIG) {}
+    set ::env(VESSEL_REPO_URL) {}
+    set ::env(VESSEL_S3CMD_CONFIG) {}
 } -result "\nEnter new values or accept defaults in brackets with Enter.*"
 
 test appc-publish-s3-1 {Verify s3cmd put succeeds when publishing} -constraints aws -setup {
-    set ::env(APPC_REPO_URL) s3://appc-test-1
+    set ::env(VESSEL_REPO_URL) s3://appc-test-1
 } -body {
 
     set minimal_appc_file [file join .. examples MinimalVesselFile]
@@ -38,7 +38,7 @@ test appc-publish-s3-1 {Verify s3cmd put succeeds when publishing} -constraints 
     close $appc_chan
     return -code ok
 } -cleanup {
-    set ::env(APPC_REPO_URL) {}
+    set ::env(VESSEL_REPO_URL) {}
 } -returnCodes ok
 
 #TODO: Test for publish/pull --reconfigure.  This is useful to force a reconfigure of s3cmd in case

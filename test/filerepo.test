@@ -28,13 +28,13 @@ namespace eval file_repo::test {
     
     test publish-file-repo-1 {Test file repo publish} -setup {
 
-	set env(APPC_REPO_URL) "file://${repo_dir_path}"
+	set env(VESSEL_REPO_URL) "file://${repo_dir_path}"
     } -body {
 
 	exec -ignorestderr appc publish --tag=test testimage >&@ stderr
 	
     } -returnCodes ok -cleanup {
-	set env(APPC_REPO_URL) {}
+	set env(VESSEL_REPO_URL) {}
     } 
 
     # TODO: hook into cleanup all tests to delete the image

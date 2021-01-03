@@ -113,7 +113,7 @@ proc signal_handler {signal active_pid_groups} {
         #    The thought being that sigint comes from a keyboard and generally will mean, stop jail.
         #
         # 2. If it's an interactive shell, pass through the signal to the main process.  NOTE: Perhaps
-        #    we need a way to define the main process in the AppcFile (or signal handler processes).
+        #    we need a way to define the main process in the VesselFile (or signal handler processes).
         #    Then we could search for it by name in the pid status files.
         #    
         # 3. SIGTERM should shutdown the jail (/etc/rc.shutdown, then kill -TERM -1)

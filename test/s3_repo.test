@@ -32,7 +32,7 @@ test appc-publish-s3-1 {Verify s3cmd put succeeds when publishing} -constraints 
     set ::env(APPC_REPO_URL) s3://appc-test-1
 } -body {
 
-    set minimal_appc_file [file join .. examples MinimalAppcFile]
+    set minimal_appc_file [file join .. examples MinimalVesselFile]
     exec --ignorestderr appc build --file=${minimal_appc_file} --tag=test-s3-1 --name={appc-publish-s3-1}
     set appc_chan [open "| appc publish --tag=test-s3-1 appc-publish-s3-1"]
     close $appc_chan

@@ -51,7 +51,7 @@ namespace eval vessel::build {
             }
             interp share {} $status_channel $interp_name
             $interp_name eval {
-                package require AppcFileCommands
+                package require VesselFileCommands
             }
             $interp_name eval [list set ::status_channel $status_channel]
             $interp_name eval [list set ::cmdline_options [dict get $build_context cmdline_options]]

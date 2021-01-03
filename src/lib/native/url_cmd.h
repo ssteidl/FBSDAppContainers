@@ -3,6 +3,6 @@
 
 #include <tcl.h>
 
-int Appc_ParseURL(void *clientData, Tcl_Interp *interp,
+int Vessel_ParseURL(void *clientData, Tcl_Interp *interp,
                   int objc, struct Tcl_Obj *const *objv);
 #endif // URL_CMD_H

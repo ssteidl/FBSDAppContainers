@@ -318,7 +318,7 @@ namespace
     }
 
     /**
-     * @brief The AppcExecSignalEvent class Encapsulates the event handling of signal events.
+     * @brief The VesselExecSignalEvent class Encapsulates the event handling of signal events.
      */
     class vessel_exec_signal_event : public Tcl_Event
     {
@@ -536,7 +536,7 @@ namespace
     }
 }
 
-int Appc_ExecInit(Tcl_Interp* interp)
+int Vessel_ExecInit(Tcl_Interp* interp)
 {
     /*TODO: We should probably make our own kqueue module
      * for vessel::native extension
@@ -545,16 +545,16 @@ int Appc_ExecInit(Tcl_Interp* interp)
     int tcl_error = vessel_exec_interp_state::create(interp, interp_state);
     if(tcl_error) return tcl_error;
 
-    Tcl_SetAssocData(interp, "AppcExec", vessel::cpp_delete_with_interp<vessel_exec_interp_state>, interp_state.release());
+    Tcl_SetAssocData(interp, "VesselExec", vessel::cpp_delete_with_interp<vessel_exec_interp_state>, interp_state.release());
 
-    (void)Tcl_CreateObjCommand(interp, "vessel::exec_set_signal_handler", Appc_Exec_SetSignalHandler, nullptr, nullptr);
-    (void)Tcl_CreateObjCommand(interp, "vessel::exec", Appc_Exec, nullptr, nullptr);
+    (void)Tcl_CreateObjCommand(interp, "vessel::exec_set_signal_handler", Vessel_Exec_SetSignalHandler, nullptr, nullptr);
+    (void)Tcl_CreateObjCommand(interp, "vessel::exec", Vessel_Exec, nullptr, nullptr);
 
     return TCL_OK;
 }
 
 /**
- * @brief Appc_Exec_SetSignalHandler Setup kqueue to notify us of interesting signals.  Set the signal
+ * @brief Vessel_Exec_SetSignalHandler Setup kqueue to notify us of interesting signals.  Set the signal
  * handler that will be called when an interesting signal is given to us.
  * @param clientData
  * @param interp
@@ -562,7 +562,7 @@ int Appc_ExecInit(Tcl_Interp* interp)
  * @param objv
  * @return
  */
-int Appc_Exec_SetSignalHandler(void *clientData, Tcl_Interp *interp,
+int Vessel_Exec_SetSignalHandler(void *clientData, Tcl_Interp *interp,
               int objc, struct Tcl_Obj *const *objv)
 {
 
@@ -575,7 +575,7 @@ int Appc_Exec_SetSignalHandler(void *clientData, Tcl_Interp *interp,
     }
 
 
-    vessel_exec_interp_state* interp_state = reinterpret_cast<vessel_exec_interp_state*>(Tcl_GetAssocData(interp, "AppcExec", nullptr));
+    vessel_exec_interp_state* interp_state = reinterpret_cast<vessel_exec_interp_state*>(Tcl_GetAssocData(interp, "VesselExec", nullptr));
 
     signal(SIGHUP, SIG_IGN);
 
@@ -597,11 +597,11 @@ int Appc_Exec_SetSignalHandler(void *clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
-int Appc_Exec(void *clientData, Tcl_Interp *interp,
+int Vessel_Exec(void *clientData, Tcl_Interp *interp,
               int objc, struct Tcl_Obj *const *objv)
 {
     (void)objv;
-    vessel_exec_interp_state* vessel_exec = reinterpret_cast<vessel_exec_interp_state*>(Tcl_GetAssocData(interp, "AppcExec", nullptr));
+    vessel_exec_interp_state* vessel_exec = reinterpret_cast<vessel_exec_interp_state*>(Tcl_GetAssocData(interp, "VesselExec", nullptr));
     assert(vessel_exec);
     kqueue_state* state = &vessel_exec->state;
 

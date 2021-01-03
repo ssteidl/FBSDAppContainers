@@ -17,4 +17,4 @@ package ifneeded vessel::repo 1.0.0 [list source [file join $dir repos.tcl]]
 package ifneeded vessel::run 1.0.0 [list source [file join $dir run.tcl]]
 package ifneeded vessel::zfs 1.0.0 [list source [file join $dir zfs.tcl]]
 
-package ifneeded AppcFileCommands 1.0.0 [list source [file join $dir vessel_file_commands.tcl]]
+package ifneeded VesselFileCommands 1.0.0 [list source [file join $dir vessel_file_commands.tcl]]

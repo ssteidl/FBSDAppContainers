@@ -59,7 +59,7 @@ namespace eval metadata_db::test {
     proc build_image {image tag} {
 	set test_image_appc_file {FROM FreeBSD:12.1-RELEASE
 	    CMD /usr/local/bin/bash -c {echo "fbsd is cool"}}
-	set test_image_chan [file tempfile appc_file /tmp/TestAppcFile]
+	set test_image_chan [file tempfile appc_file /tmp/TestVesselFile]
 	puts $test_image_chan $test_image_appc_file
 	close $test_image_chan
 

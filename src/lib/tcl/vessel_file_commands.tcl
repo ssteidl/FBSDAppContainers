@@ -253,4 +253,4 @@ proc CMD {args} {
     set cmd $args
 }
 
-package provide AppcFileCommands 1.0.0
+package provide VesselFileCommands 1.0.0

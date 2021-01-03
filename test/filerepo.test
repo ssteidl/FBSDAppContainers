@@ -14,7 +14,7 @@ namespace eval file_repo::test {
     
     proc create_test_image_dataset {} {
 	variable test_image_dataset_name
-	set appc_file [file join .. examples MinimalAppcFile]
+	set appc_file [file join .. examples MinimalVesselFile]
 	exec appc build --file=${appc_file} --tag=test --name=testimage >&@ stderr
     }
 

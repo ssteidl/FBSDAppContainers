@@ -223,7 +223,7 @@ public:
 };
 }
 
-int Appc_ParseURL(void *clientData, Tcl_Interp *interp,
+int Vessel_ParseURL(void *clientData, Tcl_Interp *interp,
                   int objc, struct Tcl_Obj *const *objv)
 {
     if(objc != 2)

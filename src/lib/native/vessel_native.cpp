@@ -603,7 +603,7 @@ namespace
     /**
      * vessel::parse_options $argc $argv
      */
-    int Appc_ParseOptions(void *clientData, Tcl_Interp *interp,
+    int Vessel_ParseOptions(void *clientData, Tcl_Interp *interp,
                           int objc, struct Tcl_Obj *const *objv)
     {
         (void)clientData;
@@ -720,7 +720,7 @@ namespace
         return TCL_OK;
     }
 
-    int Appc_DNSParseQuery(void *clientData, Tcl_Interp *interp,
+    int Vessel_DNSParseQuery(void *clientData, Tcl_Interp *interp,
                            int objc, struct Tcl_Obj *const *objv)
     {
         /*vessel::dns::parse_query <binary obj>
@@ -761,7 +761,7 @@ namespace
     }
 
 
-    int Appc_DNSGenerateAResponse(void *clientData, Tcl_Interp *interp,
+    int Vessel_DNSGenerateAResponse(void *clientData, Tcl_Interp *interp,
                                  int objc, struct Tcl_Obj *const *objv)
     {
 
@@ -805,19 +805,19 @@ namespace
 
     void init_dns(Tcl_Interp* interp)
     {
-        (void)Tcl_CreateObjCommand(interp, "vessel::dns::parse_query", Appc_DNSParseQuery, nullptr, nullptr);
-        (void)Tcl_CreateObjCommand(interp, "vessel::dns::generate_A_response", Appc_DNSGenerateAResponse,
+        (void)Tcl_CreateObjCommand(interp, "vessel::dns::parse_query", Vessel_DNSParseQuery, nullptr, nullptr);
+        (void)Tcl_CreateObjCommand(interp, "vessel::dns::generate_A_response", Vessel_DNSGenerateAResponse,
                                    nullptr, nullptr);
     }
 
     void init_url(Tcl_Interp* interp)
     {
-        (void)Tcl_CreateObjCommand(interp, "vessel::url::parse", Appc_ParseURL, nullptr, nullptr);
+        (void)Tcl_CreateObjCommand(interp, "vessel::url::parse", Vessel_ParseURL, nullptr, nullptr);
     }
 
     void init_exec(Tcl_Interp* interp)
     {
-        (void)Appc_ExecInit(interp);
+        (void)Vessel_ExecInit(interp);
     }
 }
 
@@ -830,14 +830,14 @@ Pty_Init(Tcl_Interp *interp);
 int
 Udp_Init(Tcl_Interp *interp);
 
-extern int Appctcl_Init(Tcl_Interp* interp)
+extern int Vesseltcl_Init(Tcl_Interp* interp)
 {
     if(Tcl_InitStubs(interp, "8.6", 0) == nullptr)
     {
         return TCL_ERROR;
     }
 
-    (void)Tcl_CreateObjCommand(interp, "vessel::parse_options", Appc_ParseOptions, nullptr, nullptr);
+    (void)Tcl_CreateObjCommand(interp, "vessel::parse_options", Vessel_ParseOptions, nullptr, nullptr);
 
     init_dns(interp);
     init_url(interp);

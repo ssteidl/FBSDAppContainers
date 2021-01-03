@@ -1,7 +1,7 @@
 #! /usr/bin/env tclsh8.6
 # -*- mode: tcl; -*-
 
-package require appc::name-gen
+package require vessel::name-gen
 package require cmdline
 
 set options {
@@ -22,5 +22,5 @@ try {
     exit 1
 }
 
-puts [appc::name-gen::generate-name $params(components) $params(prefix) \
+puts [vessel::name-gen::generate-name $params(components) $params(prefix) \
 	  $params(separator) $params(suffix)]

@@ -2,15 +2,15 @@
 # -*- mode: tcl; -*-
 
 package require cmdline
-package require appc::network
+package require vessel::network
 
 proc join_network {netname jail ip} {
 
     #Intentionally don't destroy these objects so the
     #OS objects (interfaces) are not destroyed.
-    set bridge_obj [appc::network::bridge new "${netname}bridge"]
+    set bridge_obj [vessel::network::bridge new "${netname}bridge"]
 
-    set internal_network_obj [appc::network::internal_network new $netname $bridge_obj]
+    set internal_network_obj [vessel::network::internal_network new $netname $bridge_obj]
     $internal_network_obj add_jail $jail $ip
 }
 

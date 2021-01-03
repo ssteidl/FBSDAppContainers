@@ -1,7 +1,7 @@
 #! /usr/bin/env tclsh8.6
 
 package require cmdline
-package require appc::network
+package require vessel::network
 
 proc create_network {netname} {
 
@@ -10,7 +10,7 @@ proc create_network {netname} {
     #Intentionally don't destroy these objects so the
     #OS objects (interfaces) are not destroyed.
     set args_dict [dict create name $netname]
-    set internal_network_obj [appc::network::create_network_cmd $args_dict]
+    set internal_network_obj [vessel::network::create_network_cmd $args_dict]
 }
 
 set options {

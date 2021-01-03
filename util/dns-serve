@@ -1,7 +1,7 @@
 #! /usr/bin/env tclsh8.6
 # -*- mode: tcl; -*-
 package require cmdline
-package require appc::dns
+package require vessel::dns
 
 set options {
     {network.arg "" "Name of the network to create"}
@@ -52,7 +52,7 @@ proc main {} {
 	puts stderr "--dns is required"
 	exit 1
     }
-    set server [appc::dns::create_server 53 $params(ip)]
+    set server [vessel::dns::create_server 53 $params(ip)]
     add_dns_mappings_from_cmdline $server $params(dns)
 
     

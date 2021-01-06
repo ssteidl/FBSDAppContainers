@@ -23,7 +23,7 @@ target_link_libraries(url_test ${CURL_LIBRARIES})
 
 install(TARGETS vesseltcl
         LIBRARY
-        DESTINATION lib/vesselappc)
+        DESTINATION lib/tclvessel)
 install(FILES src/lib/tcl/vessel_file_commands.tcl
               src/lib/tcl/bsd.tcl
               src/lib/tcl/build.tcl
@@ -38,7 +38,7 @@ install(FILES src/lib/tcl/vessel_file_commands.tcl
               src/lib/tcl/repos.tcl
               src/lib/tcl/run.tcl
               src/lib/tcl/zfs.tcl
-        DESTINATION lib/vesselappc)
+        DESTINATION lib/tclvessel)
 
 install(DIRECTORY src/network
         DESTINATION lib/tclvessel

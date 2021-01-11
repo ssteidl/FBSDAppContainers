@@ -83,7 +83,6 @@ proc FROM {image} {
     set vessel_parent_dataset [vessel::env::get_dataset]
     
     #Image is in the form <image name>:<version>
-    #So image name is the dataset and version is the snapshot name
 
     set image_tuple [split $image ":"]
     if {[llength $image_tuple] ne 2} {
@@ -104,7 +103,7 @@ proc FROM {image} {
 	set image_dataset "${vessel_parent_dataset}/${image_name}:${image_version}"
 	vessel::zfs::create_dataset $image_dataset
 
-	#TODO: This fetch_image should really be just another image.  For now it's a
+	#NOTE: This fetch_image should really be just another image.  For now it's a
 	#special case.
 	vessel::file_commands::_::fetch_image $image_dataset $image_name $image_version $status_channel
 	vessel::metadata_db::write_metadata_file $image_name $image_version {/} {/etc/rc} \
@@ -218,7 +217,9 @@ proc RUN {args} {
     set channel_dict [dict create stdin stdin stdout $status_channel stderr $status_channel]
     set network "inherit"
 
-    
+    #TODO: There is a bug where these jails are not properly cleaned up.  We could run cleanup
+    # code in various places or it might be best to just call run_command and vwait until
+    # run_command is done which will somehow set the variable vwait is waiting on.
     try {
 
 	#Copy resolv conf so we can access the internet
